@@ -30,5 +30,6 @@ setup(
     long_description=open('README.md').read(),
     install_requires=['biopython >= 1.65',
                       'argparse >= 1.4.0'],
+    scripts=['bin/MBBspades'],
     cmdclass=dict(install=RecordGit)
 )

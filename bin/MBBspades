@@ -14,8 +14,8 @@ class RunSpades(object):
     def assembly(self):
         """Helper function for file creation (if desired), manipulation, quality assessment,
         and trimming as well as the assembly"""
-        from accessoryFunctions import GenObject
-        import fastqmover
+        from MBBspades.accessoryFunctions import GenObject
+        import MBBspades.fastqmover as fastqmover
         # Run the fastq creation script - if argument is provided
         if self.fastqcreation:
             self.runmetadata = MBBspades.fastqCreator.CreateFastq(self)
@@ -23,7 +23,7 @@ class RunSpades(object):
             sys.exit()
         # Simple assembly without requiring accessory files (SampleSheet.csv, etc).
         elif self.basicassembly:
-            from basicAssembly import Basic
+            from MBBspades.basicAssembly import Basic
             self.runmetadata = Basic(self)
         else:
             # Populate the runmetadata object by parsing the SampleSheet.csv, GenerateFASTQRunStatistics.xml, and
@@ -58,7 +58,7 @@ class RunSpades(object):
     def quality(self):
         """Creates quality objects and runs the quality assessment (FastQC), and quality trimming (bbduk) on the
         supplied sequences"""
-        import quality
+        import MBBspades.quality as quality
         # Create the quality object
         qualityobject = quality.Quality(self)
         # Run FastQC on the unprocessed fastq files
