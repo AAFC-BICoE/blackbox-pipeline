@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 import os
 import subprocess
-import MBBspades.runMetadata
-import MBBspades.offhours
-import MBBspades.fastqCreator
+import MBBspades
+import MBBspades.runMetadata as runMetadata
+import MBBspades.offhours as offhours
+import MBBspades.fastqCreator as fastqCreator
 # import json
-import MBBspades.metadataprinter
-import MBBspades.spadesRun
+import MBBspades.metadataprinter as metadataprinter
+import MBBspades.spadesRun as spadesRun
 __author__ = 'adamkoziol,mikeknowles'
 
 
@@ -18,7 +19,7 @@ class RunSpades(object):
         import MBBspades.fastqmover as fastqmover
         # Run the fastq creation script - if argument is provided
         if self.fastqcreation:
-            self.runmetadata = MBBspades.fastqCreator.CreateFastq(self)
+            self.runmetadata = fastqCreator.CreateFastq(self)
             import sys
             sys.exit()
         # Simple assembly without requiring accessory files (SampleSheet.csv, etc).
@@ -29,7 +30,7 @@ class RunSpades(object):
             # Populate the runmetadata object by parsing the SampleSheet.csv, GenerateFASTQRunStatistics.xml, and
             # RunInfo.xml files
             self.runinfo = "{}RunInfo.xml".format(self.path)
-            self.runmetadata = MBBspades.runMetadata.Metadata(self)
+            self.runmetadata = runMetadata.Metadata(self)
             # Extract the flowcell ID and the instrument name if the RunInfo.xml file was provided
             self.runmetadata.parseruninfo()
             # Populate the lack of bclcall and nohup call into the metadata sheet
@@ -39,21 +40,12 @@ class RunSpades(object):
                 sample.commands.bclcall = 'NA'
             # Run the offhours fastq linking script - if argument
             if self.offhours:
-                offhoursobj = MBBspades.offhours.Offhours(self)
+                offhoursobj = offhours.Offhours(self)
                 offhoursobj.assertpathsandfiles()
                 offhoursobj.numberofsamples()
             # Move the files
             else:
                 fastqmover.FastqMover(self)
-        # Run the quality trimming module
-        self.quality()
-        MBBspades.spadesRun.Spades(self)
-        # Print the metadata to file
-        MBBspades.metadataprinter.MetadataPrinter(self)
-        # metadataReader.metadataReader(self)
-        # import json
-        # print json.dumps([x.dump() for x in self.runmetadata.samples],
-        #                  sort_keys=True, indent=4, separators=(',', ': '))
 
     def quality(self):
         """Creates quality objects and runs the quality assessment (FastQC), and quality trimming (bbduk) on the
@@ -66,7 +58,13 @@ class RunSpades(object):
         # Perform quality trimming and FastQC on the trimmed files
         qualityobject.trimquality()
         # Print the metadata to file
-        MBBspades.metadataprinter.MetadataPrinter(self)
+        metadataprinter.MetadataPrinter(self)
+
+    def typing(self):
+        import MBBspades.mMLST as mMLST
+        # blaster(path, cutoff, sequencepath, allelepath, organismpath, scheme, organism)
+        # mMLST.blaster(self.path, 98, self, '/spades_pipeline/SPAdesPipelineFiles/rMLST', '', '', '')
+        mMLST.PipelineInit(self, 'rmlst')
 
     # TODO Dictreader - tsv to dictionary
 
@@ -91,27 +89,29 @@ class RunSpades(object):
         """
         # Define variables from the arguments - there may be a more streamlined way to do this
         self.args = args
-        self.path = os.path.join(args.path, "")
-        self.numreads = args.n
-        self.offhours = args.offHours
-        self.fastqcreation = args.FastqCreation
-        self.fastqdestination = args.d
-        self.reffilepath = os.path.join(args.r, "")
-        self.forwardlength = args.r1
-        self.reverselength = args.r2
+        self.path = os.path.join(args['path'], "")
+        self.numreads = args['n']
+        self.offhours = args['offHours']
+        self.fastqcreation = args['FastqCreation']
+        self.fastqdestination = args['d']
+        self.reffilepath = os.path.join(args['r'], "")
+        self.forwardlength = args['r1']
+        self.reverselength = args['r2']
         self.numreads = 1 if self.reverselength == 0 else 2
-        self.kmers = args.k
-        self.customsamplesheet = args.c
-        self.basicassembly = args.basicAssembly
+        self.kmers = args['k']
+        self.customsamplesheet = args['c']
+        self.basicassembly = args['basicAssembly']
+        self.pipelinefilepath = os.path.join(args['P'], "")
         # Use the argument for the number of threads to use, or default to the number of cpus in the system
-        self.cpus = args.t if args.t else \
-            int(subprocess.Popen("awk '/^processor/ { N++} END { print N }' "
-                                                               "/proc/cpuinfo", shell=True, stdout=subprocess.PIPE)
-                                              .communicate()[0].rstrip())
+        self.cpus = args['t'] if args['t'] else int(subprocess.Popen("awk '/^processor/ { N++} END { print N }' "
+                                                    "/proc/cpuinfo", shell=True, stdout=subprocess.PIPE)
+                                                    .communicate()[0].rstrip())
         # Assertions to ensure that the provided variables are valid
         assert os.path.isdir(self.path), u'Output location is not a valid directory {0!r:s}'.format(self.path)
-        assert os.path.isdir(self.reffilepath), u'Output location is not a valid directory {0!r:s}'\
+        assert os.path.isdir(self.reffilepath), u'Reference file path is not a valid directory {0!r:s}'\
             .format(self.reffilepath)
+        assert os.path.isdir(self.pipelinefilepath), u'Pipeline file path is not a valid directory {0!r:s}'\
+            .format(self.pipelinefilepath)
         self.commit = pipelinecommit
         self.homepath = scriptpath
         self.runinfo = ""
@@ -119,7 +119,19 @@ class RunSpades(object):
         self.runmetadata = ""
         # Define the start time
         self.starttime = startingtime
+        # Start the assembly
         self.assembly()
+        # Run the quality trimming module
+        self.quality()
+        # Run spades
+        spadesRun.Spades(self)
+        # Print the metadata to file
+        metadataprinter.MetadataPrinter(self)
+        #
+        self.typing()
+        # import json
+        # print json.dumps([x.dump() for x in self.runmetadata.samples],
+        #                  sort_keys=True, indent=4, separators=(',', ': '))
 
 
 # If the script is called from the command line, then call the argument parser

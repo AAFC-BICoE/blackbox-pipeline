@@ -12,7 +12,7 @@ class RecordGit(install):
 
     def run(self):
         print 'recording git commit'
-        with open(os.path.join(os.path.split(__file__)[0], 'MBBSpades', 'data', 'git.dat')) as git:
+        with open(os.path.join(os.path.split(__file__)[0], 'MBBspades', 'data', 'git.dat'), 'w') as git:
             git.write(os.popen('git rev-parse --short HEAD').read().rstrip())
         install.run(self)
 
