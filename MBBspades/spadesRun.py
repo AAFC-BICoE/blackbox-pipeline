@@ -79,7 +79,8 @@ class Spades(object):
         while True:
             (command, output) = self.assemblequeue.get()
             if command and not os.path.isfile('{}/contigs.fasta'.format(output)):
-                execute(command)
+                log = os.path.join(output, 'docker.log')
+                execute(command, log)
             # Signal to the queue that the job is done
             self.assemblequeue.task_done()
 

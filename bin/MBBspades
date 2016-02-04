@@ -89,29 +89,29 @@ class RunSpades(object):
         """
         # Define variables from the arguments - there may be a more streamlined way to do this
         self.args = args
-        self.path = os.path.join(args['path'], "")
-        self.numreads = args['n']
-        self.offhours = args['offHours']
-        self.fastqcreation = args['FastqCreation']
-        self.fastqdestination = args['d']
-        self.reffilepath = os.path.join(args['r'], "")
-        self.forwardlength = args['r1']
-        self.reverselength = args['r2']
+        self.path = os.path.join(args.path, "")
+        self.numreads = args.n
+        self.offhours = args.offHours
+        self.fastqcreation = args.FastqCreation
+        self.fastqdestination = args.d
+        self.reffilepath = os.path.join(args.r, "")
+        self.forwardlength = args.r1
+        self.reverselength = args.r2
         self.numreads = 1 if self.reverselength == 0 else 2
-        self.kmers = args['k']
-        self.customsamplesheet = args['c']
-        self.basicassembly = args['basicAssembly']
-        self.pipelinefilepath = os.path.join(args['P'], "")
+        self.kmers = args.k
+        self.customsamplesheet = args.c
+        self.basicassembly = args.basicAssembly
+        # self.pipelinefilepath = os.path.join(args.P, "")
         # Use the argument for the number of threads to use, or default to the number of cpus in the system
-        self.cpus = args['t'] if args['t'] else int(subprocess.Popen("awk '/^processor/ { N++} END { print N }' "
+        self.cpus = args.t if args.t else int(subprocess.Popen("awk '/^processor/ { N++} END { print N }' "
                                                     "/proc/cpuinfo", shell=True, stdout=subprocess.PIPE)
                                                     .communicate()[0].rstrip())
         # Assertions to ensure that the provided variables are valid
         assert os.path.isdir(self.path), u'Output location is not a valid directory {0!r:s}'.format(self.path)
-        assert os.path.isdir(self.reffilepath), u'Reference file path is not a valid directory {0!r:s}'\
-            .format(self.reffilepath)
-        assert os.path.isdir(self.pipelinefilepath), u'Pipeline file path is not a valid directory {0!r:s}'\
-            .format(self.pipelinefilepath)
+        # assert os.path.isdir(self.reffilepath), u'Reference file path is not a valid directory {0!r:s}'\
+        #     .format(self.reffilepath)
+        # assert os.path.isdir(self.pipelinefilepath), u'Pipeline file path is not a valid directory {0!r:s}'\
+        #     .format(self.pipelinefilepath)
         self.commit = pipelinecommit
         self.homepath = scriptpath
         self.runinfo = ""
@@ -128,7 +128,7 @@ class RunSpades(object):
         # Print the metadata to file
         metadataprinter.MetadataPrinter(self)
         #
-        self.typing()
+        # self.typing()
         # import json
         # print json.dumps([x.dump() for x in self.runmetadata.samples],
         #                  sort_keys=True, indent=4, separators=(',', ': '))
@@ -179,6 +179,9 @@ if __name__ == '__main__':
                         'this sheet must still have the same format of Illumina SampleSheet.csv files')
     parser.add_argument('-b', '--basicAssembly', action='store_true', help='Performs a basic de novo assembly, '
                         'and does not collect metadata')
+    # parser.add_argument('-P', metavar='pipelinefilepath', default='/spades_pipeline/SPAdesPipelineFiles', help='Path'
+    #                     'to folder containing necessary files for sample typing. Default is '
+    #                     '/spades_pipeline/SPAdesPipelineFiles')
 
     # Get the arguments into a list
     arguments = parser.parse_args()
