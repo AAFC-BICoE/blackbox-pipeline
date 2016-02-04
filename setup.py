@@ -11,14 +11,34 @@ class RecordGit(install):
     description = 'include git SHA-1 sum'
 
     def run(self):
+        import sys
         print 'recording git commit'
+        from MBBspades.accessoryFunctions import make_path
+        make_path(os.path.join(os.path.split(__file__)[0], 'MBBspades', 'data'))
         with open(os.path.join(os.path.split(__file__)[0], 'MBBspades', 'data', 'git.dat'), 'w') as git:
             git.write(os.popen('git rev-parse --short HEAD').read().rstrip())
-        install.run(self)
+        # Attempt to detect whether we were called from setup() or by another
+        # command.  If we were called by setup(), our caller will be the
+        # 'run_command' method in 'distutils.dist', and *its* caller will be
+        # the 'run_commands' method.  If we were called any other way, our
+        # immediate caller *might* be 'run_command', but it won't have been
+        # called by 'run_commands'.  This is slightly kludgy, but seems to
+        # work.
+        #
+        caller = sys._getframe(2)
+        caller_module = caller.f_globals.get('__name__','')
+        caller_name = caller.f_code.co_name
+        if caller_module != 'distutils.dist' or caller_name!='run_commands':
+            # We weren't called from the command line or setup(), so we
+            # should run in backward-compatibility mode to support bdist_*
+            # commands.
+            install.run(self)
+        else:
+            self.do_egg_install()
 
 setup(
     name='docker-assembly',
-    version='0.0dev1',
+    version='0.0.dev1',
     packages=['MBBspades'],
     url='https://github.com/MikeKnowles/docker-assembly',
     package_data=dict(MBBspades=['MBBspades/data/*.dat']),
