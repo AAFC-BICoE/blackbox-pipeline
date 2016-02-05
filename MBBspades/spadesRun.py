@@ -69,7 +69,7 @@ class Spades(object):
             # Add the command to the metadata
             sample.commands.spadescall = spadescommand
             # Record SPAdes version
-            sample.sotware.SPAdes = self.version
+            sample.software.SPAdes = self.version
         # Join the threads
         self.assemblequeue.join()
         # Filter contigs shorter than 1000 bp, and rename remaining contigs with sample.name
