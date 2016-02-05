@@ -68,6 +68,8 @@ class Spades(object):
             self.assemblequeue.put((spadescommand, sample.general.spadesoutput))
             # Add the command to the metadata
             sample.commands.spadescall = spadescommand
+            # Record SPAdes version
+            sample.sotware.SPAdes = self.version
         # Join the threads
         self.assemblequeue.join()
         # Filter contigs shorter than 1000 bp, and rename remaining contigs with sample.name
@@ -171,4 +173,7 @@ class Spades(object):
         self.path = inputobject.path
         self.assemblequeue = Queue()
         printtime('Assembling sequences', self.start)
+        import spades_init
+        spades_init.init()
+        self.version = spades_init.spades_version.rstrip()
         self.spades()

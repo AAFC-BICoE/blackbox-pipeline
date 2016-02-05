@@ -3,7 +3,7 @@ import os
 from threading import Thread
 from Queue import Queue
 import time
-from subprocess import call
+from subprocess import call, Popen, PIPE
 from accessoryFunctions import printtime
 __author__ = 'adamkoziol,mikeknowles'
 
@@ -12,6 +12,7 @@ class Quality(object):
 
     def fastqcthreader(self, level):
         printtime('Running quality control on {} fastq files'.format(level), self.start)
+        version = os.popen('fastqc -v').read().rstrip()
         for sample in self.metadata:
             if type(sample.general.fastqfiles) is list:
                 # Create and start threads for each fasta file in the list
@@ -46,6 +47,10 @@ class Quality(object):
                     fastqccall = "fastqc {} {} -q -o {} -t 12".format(fastqfiles[0], fastqfiles[1], outdir)
                 elif len(fastqfiles) == 1:
                     fastqccall = "fastqc {} -q -o {} -t 12".format(fastqfiles[0], outdir)
+                # Record FastQC commands
+                sample.commands.FastQC = fastqccall
+                # Record FastQC version
+                sample.sotware.FastQC = version
                 # Add the arguments to the queue
                 self.qcqueue.put((fastqccall, outdir))
         # Wait on the trimqueue until everything has been processed
@@ -70,6 +75,7 @@ class Quality(object):
 
     def trimquality(self):
         """Uses bbduk from the bbmap tool suite to quality and adapter trim"""
+        version = Popen(['./bbduk.sh', '-version'], stderr=PIPE).stderr.read().split('\n')[-3].split()[-1]
         from glob import glob
         print "\r[{:}] Trimming fastq files".format(time.strftime("%H:%M:%S"))
         # Create and start threads for each strain with fastq files
@@ -106,6 +112,10 @@ class Quality(object):
                         "ref={}/resources/adapters.fa hdist=1".format(fastqfiles[0], cleanforward, self.bbduklocation)
                 else:
                     bbdukcall = ""
+                # Record bbMap commands
+                sample.commands.bbduk = bbdukcall if bbdukcall else "NA"
+                # Record FastQC version
+                sample.sotware.bbduk = version
                 # Add the arguments to the queue
                 self.trimqueue.put((bbdukcall, cleanforward))
         # Wait on the trimqueue until everything has been processed

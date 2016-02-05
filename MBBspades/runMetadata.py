@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from accessoryFunctions import MetadataObject, GenObject
-import metadataReader
 import os
 # Import ElementTree - try first to import the faster C version, if that doesn't
 # work, try to import the regular version
@@ -105,9 +104,9 @@ class Metadata(object):
                         # Append the strainmetadata object to a list
                         self.samples.append(strainmetadata)
         # Grab metadata from previous runs
-        #metadata = metadataReader.MetadataReader(self)
+        # metadata = metadataReader.MetadataReader(self)
         # Update self.samples
-        #self.samples = metadata.samples
+        # self.samples = metadata.samples
         # import json
         # print json.dumps([x.dump() for x in self.samples], sort_keys=True, indent=4, separators=(',', ': '))
 
