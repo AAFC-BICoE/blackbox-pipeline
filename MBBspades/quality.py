@@ -50,7 +50,7 @@ class Quality(object):
                 # Record FastQC commands
                 sample.commands.FastQC = fastqccall
                 # Record FastQC version
-                sample.sotware.FastQC = version
+                sample.software.FastQC = version
                 # Add the arguments to the queue
                 self.qcqueue.put((fastqccall, outdir))
         # Wait on the trimqueue until everything has been processed
@@ -115,7 +115,7 @@ class Quality(object):
                 # Record bbMap commands
                 sample.commands.bbduk = bbdukcall if bbdukcall else "NA"
                 # Record FastQC version
-                sample.sotware.bbduk = version
+                sample.software.bbduk = version
                 # Add the arguments to the queue
                 self.trimqueue.put((bbdukcall, cleanforward))
         # Wait on the trimqueue until everything has been processed

@@ -155,15 +155,10 @@ class Spades(object):
                             # Extract the relevant data and add it to the metadata
                             sample.general.insertsize = line.split('= ')[1].split(',')[0]
                             sample.general.insertsizestandarddev = line.split('= ')[2].split(',')[0]
-                        else:
-                            sample.general.insertsize = 'NA'
-                            sample.general.insertsizestandarddev = 'NA'
             # Otherwise, populate with NA
             else:
                 sample.general.insertsize = 'NA'
                 sample.general.insertsizestandarddev = 'NA'
-            print sample.general.insertsize
-
     def __init__(self, inputobject):
         from Queue import Queue
         self.metadata = inputobject.runmetadata.samples

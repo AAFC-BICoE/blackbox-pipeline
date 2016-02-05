@@ -112,6 +112,7 @@ class RunSpades(object):
         self.quality()
         # Run spades
         spadesRun.Spades(self)
+        quastParser.Quast(self)
         # Print the metadata to file
         metadataprinter.MetadataPrinter(self)
         #

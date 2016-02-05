@@ -24,6 +24,7 @@ class Quast(object):
             sample.software.Quast = self.version
             if sample.general.bestassemblyfile:
                 sample.general.quastresults = '{}/quast_results'.format(sample.general.outputdirectory)
+                make_path(sample.general.quastresults)
                 if os.path.isdir("{0:s}/referencegenome".format(self.path)):
                     from glob import glob
                     referencegenome = glob("{0:s}/referencegenome/*".format(self.path))
@@ -72,6 +73,7 @@ class Quast(object):
         self.kmers = inputobject.kmers
         self.threads = inputobject.cpus
         self.path = inputobject.path
-        self.threads = inputobject.threads
         self.qqueue = Queue()
         self.kmers = inputobject.kmers
+        self.quastprocess()
+        printtime('Running Quast {} for assembly metrics', self.start)
