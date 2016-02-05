@@ -1,6 +1,6 @@
 #!/usr/bin/env python
+import multiprocessing
 import os
-import subprocess
 from MBBspades import *
 __author__ = 'adamkoziol,mikeknowles'
 
@@ -92,8 +92,7 @@ class RunSpades(object):
         self.basicassembly = args.basicAssembly
         # self.pipelinefilepath = os.path.join(args.P, "")
         # Use the argument for the number of threads to use, or default to the number of cpus in the system
-        self.cpus = args.t if args.t else int(subprocess.Popen("awk '/^processor/ { N++} END { print N }' /proc/cpuinfo"
-                                                               , stdout=subprocess.PIPE).stdout()[0].rstrip())
+        self.cpus = args.t if args.t else multiprocessing.cpu_count()
         # Assertions to ensure that the provided variables are valid
         assert os.path.isdir(self.path), u'Output location is not a valid directory {0!r:s}'.format(self.path)
         # assert os.path.isdir(self.reffilepath), u'Reference file path is not a valid directory {0!r:s}'\

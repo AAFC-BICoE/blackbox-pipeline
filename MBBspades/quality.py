@@ -75,7 +75,7 @@ class Quality(object):
 
     def trimquality(self):
         """Uses bbduk from the bbmap tool suite to quality and adapter trim"""
-        version = Popen(['./bbduk.sh', '-version'], stderr=PIPE).stderr.read().split('\n')[-3].split()[-1]
+        version = Popen(['bbduk.sh', '-version'], stderr=PIPE).stderr.read().split('\n')[-3].split()[-1]
         from glob import glob
         print "\r[{:}] Trimming fastq files".format(time.strftime("%H:%M:%S"))
         # Create and start threads for each strain with fastq files
