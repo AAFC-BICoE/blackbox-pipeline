@@ -159,6 +159,7 @@ class Spades(object):
             else:
                 sample.general.insertsize = 'NA'
                 sample.general.insertsizestandarddev = 'NA'
+
     def __init__(self, inputobject):
         from Queue import Queue
         self.metadata = inputobject.runmetadata.samples
