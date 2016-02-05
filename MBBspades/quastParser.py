@@ -46,6 +46,7 @@ class Quast(object):
                 log = os.path.join(sample.general.quastresults, 'stdout.log')
                 # sys.stdout, sys.stderr = out, err
                 execute(sample.commands.Quast)
+            if os.path.isfile('{}/report.tsv'.format(sample.general.quastresults)):
                 self.metaparse(sample)
             # Signal to the queue that the job is done
             self.qqueue.task_done()
