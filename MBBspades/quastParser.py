@@ -52,15 +52,19 @@ class Quast(object):
             self.qqueue.task_done()
 
     def metaparse(self, sample):
-        repls = ('>=', 'Over'), ('000 Bp', 'kbp'), ('#', 'Num'), ("'", ''), ('(', ''), (')', ''), (' ', '')
+        repls = ('>=', 'Over'), ('000 Bp', 'kbp'), ('#', 'Num'), \
+                ("'", ''), ('(', ''), (')', ''), (' ', ''), ('>', 'Less')
         if not os.path.isfile("%s/report.tsv" % sample.general.quastresults):
             print "There was an issue getting the metadata from {0:s}".format(sample.name)
         else:
             quast = dict()
-            with open("{0:s}/report.tsv".format(sample.general.quastresults)) as report:
+            resfile = "{0:s}/gage_report.tsv".format(sample.general.quastresults) \
+                if os.path.isfile("{0:s}/gage_report.tsv".format(sample.general.quastresults)) \
+                else "{0:s}/report.tsv".format(sample.general.quastresults)
+            with open(resfile) as report:
                 report.next()
                 for line in report:
-                    # Use headings in report as keys for the GenObject
+                    # Use headings in report as keys for the GenObject supplied from generator and replace
                     k, v = [reduce(lambda a, kv: a.title().replace(*kv), repls, s) for s in line.rstrip().split('\t')]
                     quast[k] = v
             sample.assembly = GenObject(quast)
