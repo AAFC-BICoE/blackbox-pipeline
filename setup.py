@@ -13,9 +13,9 @@ class RecordGit(install):
     def run(self):
         import sys
         print 'recording git commit'
-        from MBBspades.accessoryFunctions import make_path
-        make_path(os.path.join(os.path.split(__file__)[0], 'MBBspades', 'data'))
-        with open(os.path.join(os.path.split(__file__)[0], 'MBBspades', 'data', 'git.dat'), 'w') as git:
+        from blackbox.accessoryFunctions import make_path
+        make_path(os.path.join(os.path.split(__file__)[0], 'blackbox', 'data'))
+        with open(os.path.join(os.path.split(__file__)[0], 'blackbox', 'data', 'git.dat'), 'w') as git:
             git.write(os.popen('git rev-parse --short HEAD').read().rstrip())
         # Attempt to detect whether we were called from setup() or by another
         # command.  If we were called by setup(), our caller will be the
@@ -26,9 +26,9 @@ class RecordGit(install):
         # work.
         #
         caller = sys._getframe(2)
-        caller_module = caller.f_globals.get('__name__','')
+        caller_module = caller.f_globals.get('__name__', '')
         caller_name = caller.f_code.co_name
-        if caller_module != 'distutils.dist' or caller_name!='run_commands':
+        if caller_module != 'distutils.dist' or caller_name != 'run_commands':
             # We weren't called from the command line or setup(), so we
             # should run in backward-compatibility mode to support bdist_*
             # commands.
@@ -36,12 +36,13 @@ class RecordGit(install):
         else:
             self.do_egg_install()
 
+
 setup(
     name='docker-assembly',
     version='0.0.dev1',
     packages=['MBBspades'],
     url='https://github.com/MikeKnowles/docker-assembly',
-    package_data=dict(MBBspades=['MBBspades/data/*.dat']),
+    package_data=dict(MBBspades=['blackbox/data/*.dat']),
     include_package_data=True,
     license='MIT',
     author='mike knowles',

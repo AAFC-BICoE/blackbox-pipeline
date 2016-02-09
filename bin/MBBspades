@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import multiprocessing
 import os
-from MBBspades import *
+from blackbox import *
 __author__ = 'adamkoziol,mikeknowles'
 
 
@@ -125,7 +125,7 @@ class RunSpades(object):
 # If the script is called from the command line, then call the argument parser
 if __name__ == '__main__':
     from time import time
-    from MBBspades.accessoryFunctions import printtime
+    from blackbox.accessoryFunctions import printtime
     from pkg_resources import resource_filename
     # Get the current commit of the pipeline from git
     # Extract the path of the current script from the full path + file name
