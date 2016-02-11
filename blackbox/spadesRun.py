@@ -8,6 +8,8 @@ class Spades(object):
 
     def spades(self):
         from threading import Thread
+        import spades
+        spadespath = spades.__file__
         # Find the fastq files for each sample
         # Only make as many threads are there are samples with fastq files
         for i in range(len([sample.general for sample in self.metadata if type(sample.general.fastqfiles) is list])):
@@ -44,23 +46,28 @@ class Spades(object):
                     reverse = fastqfiles[1]
                     # If a previous assembly was partially completed, continue from the most recent checkpoint
                     if os.path.isdir(sample.general.spadesoutput):
-                        spadescommand = 'spades.py -k {} --careful --continue --pe1-1 {} --pe1-2 {} -o {} -t {}'\
+                        spadescommand = '-k {} --careful --continue --pe1-1 {} --pe1-2 {} -o {} -t {}'\
                                         .format(sample.general.kmers, forward, reverse, sample.general.spadesoutput,
                                                 self.threads)
                     else:
-                        spadescommand = 'spades.py -k {} --careful --pe1-1 {} --pe1-2 {} -o {} -t {}'\
+                        spadescommand = '-k {} --careful --pe1-1 {} --pe1-2 {} -o {} -t {}'\
                                         .format(sample.general.kmers, forward, reverse, sample.general.spadesoutput,
                                                 self.threads)
                 # Same as above, but use single read settings for spades
                 else:
                     if os.path.isdir(sample.general.spadesoutput):
-                        spadescommand = 'spades.py -k {} --careful --continue --s1 {} -o {} -t {}'\
+                        spadescommand = '-k {} --careful --continue --s1 {} -o {} -t {}'\
                                         .format(sample.general.kmers, forward, sample.general.spadesoutput,
                                                 self.threads)
                     else:
-                        spadescommand = 'spades.py -k {} --careful --s1 {} -o {} -t {}'\
+                        spadescommand = '-k {} --careful --s1 {} -o {} -t {}'\
                                         .format(sample.general.kmers, forward, sample.general.spadesoutput,
                                                 self.threads)
+                # SPAdes 3.6.2 supports python 3.5
+                if self.version >= "3.6.2":
+                    spadescommand = "python3 {} {}".format(spadespath, spadescommand)
+                else:
+                    spadescommand = "spades.py " + spadescommand
             # If there are no fastq files, populate the metadata appropriately
             else:
                 sample.general.spadesoutput = 'NA'
@@ -80,7 +87,7 @@ class Spades(object):
     def assemble(self):
         """Run the assembly command in a multi-threaded fashion"""
         while True:
-            (command, output) = self.assemblequeue.get()
+            command, output = self.assemblequeue.get()
             if command and not os.path.isfile('{}/contigs.fasta'.format(output)):
                 execute(command)
             # Signal to the queue that the job is done

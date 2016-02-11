@@ -40,7 +40,7 @@ class RecordGit(install):
 setup(
     name='docker-assembly',
     version='0.0.dev1',
-    packages=['MBBspades'],
+    packages=['blackbox'],
     url='https://github.com/MikeKnowles/docker-assembly',
     package_data=dict(MBBspades=['blackbox/data/*.dat']),
     include_package_data=True,
