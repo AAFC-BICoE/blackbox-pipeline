@@ -6,10 +6,11 @@ import quast
 __author__ = 'mikeknowles,akoziol'
 
 
-class Quast(object):
+class Busco(object):
 
-    def quastprocess(self):
+    def buscoprocess(self):
         from threading import Thread
+        os.chdir(self.path)
         # Find the fasta files for each sample
         # Only make as many threads are there are samples with fasta files
         for i in range(len([sample.general for sample in self.metadata if sample.general.bestassemblyfile])):
@@ -20,10 +21,13 @@ class Quast(object):
             # Start the threading
             threads.start()
         for sample in self.metadata:
-            # Initialise the quast command and version
-            sample.software.Quast = self.version
+            # Save augustus, blast and BUSCO versions
+            sample.software.BUSCO, sample.software.Blastn, sample.software.Augustus =\
+                self.version, self.blast, self.augustus
             if sample.general.bestassemblyfile:
-                sample.general.quastresults = '{}/quast_results'.format(sample.general.outputdirectory)
+                sample.general.buscoresults = '{}/busco_results'.format(sample.general.outputdirectory)
+                sample.commands.BUSCO = "python3 {} -in {} -o {} -l {} -m genome".\
+                    format(self.executable, sample.general.bestassemblyfile, sample.name, self.lineage)
                 if os.path.isdir("{0:s}/referencegenome".format(self.path)):
                     from glob import glob
                     referencegenome = glob("{0:s}/referencegenome/*".format(self.path))
@@ -73,15 +77,21 @@ class Quast(object):
 
     def __init__(self, inputobject):
         from Queue import Queue
-        # Find quast version
-        from libs.qconfig import quast_version
-        self.version = quast_version()
+        from Bio.Blast.Applications import NcbiblastnCommandline
+        from distutils import spawn
+        # Find blastn and augustus version
+        self.version = "v1.1b1"
+        self.augustus = " ".join(Popen(['augustus', '--version'], stderr=PIPE).stderr.read().split()[:2])
+        self.blast = NcbiblastnCommandline(version=True)()[0].replace('\n', ' ').rstrip()
         self.metadata = inputobject.runmetadata.samples
+        self.executable = os.path.abspath(spawn.find_executable("BUSCO_{}.py".format(self.version)))
         self.start = inputobject.starttime
-        self.kmers = inputobject.kmers
         self.threads = inputobject.cpus
         self.path = inputobject.path
         self.qqueue = Queue()
-        printtime('Running Quast {} for assembly metrics'.format(self.version.split(",")[0]), self.start)
-        self.quastprocess()
+        printtime('Running BUSCO {} for gene discovery metrics'.format(self.version.split(",")[0]), self.start)
+        # Testing with bacterial HMMs
+        self.lineage = 'bacteri'
+        self.buscoprocess()
+
 
