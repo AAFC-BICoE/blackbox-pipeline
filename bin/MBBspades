@@ -90,6 +90,7 @@ class RunSpades(object):
         self.kmers = args.k
         self.customsamplesheet = args.c
         self.basicassembly = args.basicAssembly
+        self.clade = args.clade
         # self.pipelinefilepath = os.path.join(args.P, "")
         # Use the argument for the number of threads to use, or default to the number of cpus in the system
         self.cpus = args.t if args.t else multiprocessing.cpu_count()
@@ -112,7 +113,10 @@ class RunSpades(object):
         self.quality()
         # Run spades
         spadesRun.Spades(self)
+        # Run quast
         quastParser.Quast(self)
+        # RUN BUSCO
+        BuscoParser.Busco(self)
         # Print the metadata to file
         metadataprinter.MetadataPrinter(self)
         #
@@ -167,6 +171,7 @@ if __name__ == '__main__':
                         'this sheet must still have the same format of Illumina SampleSheet.csv files')
     parser.add_argument('-b', '--basicAssembly', action='store_true', help='Performs a basic de novo assembly, '
                         'and does not collect metadata')
+    parser.add_argument('--clade', default='bacteria', help="Specifiy HMM database for BUSCO")
     # parser.add_argument('-P', metavar='pipelinefilepath', default='/spades_pipeline/SPAdesPipelineFiles', help='Path'
     #                     'to folder containing necessary files for sample typing. Default is '
     #                     '/spades_pipeline/SPAdesPipelineFiles')

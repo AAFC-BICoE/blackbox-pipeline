@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from accessoryFunctions import *
 import os
-import quast
+import shutil
 
 __author__ = 'mikeknowles,akoziol'
 
@@ -22,58 +22,49 @@ class Busco(object):
             threads.start()
         for sample in self.metadata:
             # Save augustus, blast and BUSCO versions
-            sample.software.BUSCO, sample.software.Blastn, sample.software.Augustus =\
-                self.version, self.blast, self.augustus
+            sample.software.BUSCO, sample.software.Blastn, sample.software.Augustus, sample.software.python3 =\
+                self.version, self.blast, self.augustus, self.pyversion
             if sample.general.bestassemblyfile:
                 sample.general.buscoresults = '{}/busco_results'.format(sample.general.outputdirectory)
+                buscotemp = "{}run_{}".format(self.path, sample.name)
                 sample.commands.BUSCO = "python3 {} -in {} -o {} -l {} -m genome".\
                     format(self.executable, sample.general.bestassemblyfile, sample.name, self.lineage)
-                if os.path.isdir("{0:s}/referencegenome".format(self.path)):
-                    from glob import glob
-                    referencegenome = glob("{0:s}/referencegenome/*".format(self.path))
-                    sample.commands.Quast = "quast.py -R {0:s} --gage {1:s} -o {2:s}".\
-                        format(referencegenome[0], sample.general.bestassemblyfile, sample.general.quastresults)
-                else:
-                    sample.commands.Quast = "quast.py {0:s} -o {1:s}".\
-                        format(sample.general.bestassemblyfile, sample.general.quastresults)
-                self.qqueue.put(sample)
+                self.qqueue.put((sample, buscotemp))
             else:
-                sample.commands.QuastCommand = "NA"
+                sample.commands.BUSCO = "NA"
         self.qqueue.join()
 
     def analyze(self):
         """Run the quast command in a multi-threaded fashion"""
         while True:
-            sample = self.qqueue.get()
-            if sample.general.bestassemblyfile != 'NA' \
-                    and not os.path.isfile('{}/report.tsv'.format(sample.general.quastresults)):
-                log = os.path.join(sample.general.quastresults, 'stdout.log')
-                # sys.stdout, sys.stderr = out, err
-                execute(sample.commands.Quast)
-            if os.path.isfile('{}/report.tsv'.format(sample.general.quastresults)):
-                self.metaparse(sample)
+            sample, temp = self.qqueue.get()
+            summary = 'short_summary_{}'.format(sample.name)
+            tempfile, moved = [os.path.join(x, summary) for x in [temp, sample.general.buscoresults]]
+            # Make sure assembled data exists and BUSCO results do not exist
+            if sample.general.bestassemblyfile != 'NA' and map(os.path.isfile, [tempfile, moved]) == [False] * 2:
+                execute(sample.commands.BUSCO)
+            if os.path.isfile(tempfile):
+                shutil.move(temp, sample.general.buscoresults)
+            elif os.path.isfile(moved):
+                self.metaparse(sample, moved)
             # Signal to the queue that the job is done
             self.qqueue.task_done()
 
-    def metaparse(self, sample):
-        repls = ('>=', 'Over'), ('000 Bp', 'kbp'), ('#', 'Num'), \
-                ("'", ''), ('(', ''), (')', ''), (' ', ''), ('>', 'Less'), ('Gc%', 'GC%')
-        if not os.path.isfile("%s/report.tsv" % sample.general.quastresults):
+    @staticmethod
+    def metaparse(sample, resfile):
+        pc = lambda x: x if x[0].isupper() else x.title()
+        if not os.path.isfile(resfile):
             print "There was an issue getting the metadata from {0:s}".format(sample.name)
         else:
-            quast = dict()
-            resfile = "{0:s}/gage_report.tsv".format(sample.general.quastresults) \
-                if os.path.isfile("{0:s}/gage_report.tsv".format(sample.general.quastresults)) \
-                else "{0:s}/report.tsv".format(sample.general.quastresults)
+            busco = dict()
             with open(resfile) as report:
-                report.next()
                 for line in report:
-                    # Use headings in report as keys for the GenObject supplied from generator and replace incrementally
-                    # with reduce and lambda function below
-                    k, v = [reduce(lambda a, kv: a.title().replace(*kv), repls, s) for s in line.rstrip().split('\t')]
-                    quast[k] = v
-            sample.assembly = GenObject(quast)
-            sample.assembly.kmers = self.kmers
+                    if line.strip():
+                        if line.strip()[0].isdigit():
+                            v, k = [[n, "".join([pc(y) for y in key.split()])] for n, key in [line.strip().split('\t')]][0]
+                            busco[k] = v
+            busco.update(sample.assembly.datastore)
+            sample.assembly = GenObject(busco)
 
     def __init__(self, inputobject):
         from Queue import Queue
@@ -81,17 +72,19 @@ class Busco(object):
         from distutils import spawn
         # Find blastn and augustus version
         self.version = "v1.1b1"
-        self.augustus = " ".join(Popen(['augustus', '--version'], stderr=PIPE).stderr.read().split()[:2])
+        self.augustus = " ".join(get_version(['augustus', '--version']).split()[:2])
         self.blast = NcbiblastnCommandline(version=True)()[0].replace('\n', ' ').rstrip()
         self.metadata = inputobject.runmetadata.samples
+        # Retrieve abspath of BUSCO executable using spawn
         self.executable = os.path.abspath(spawn.find_executable("BUSCO_{}.py".format(self.version)))
+        self.pyversion = get_version(['python3', '-c', 'import sys; print(sys.version)'])
         self.start = inputobject.starttime
         self.threads = inputobject.cpus
         self.path = inputobject.path
         self.qqueue = Queue()
         printtime('Running BUSCO {} for gene discovery metrics'.format(self.version.split(",")[0]), self.start)
         # Testing with bacterial HMMs
-        self.lineage = 'bacteri'
+        self.lineage = inputobject.clade
         self.buscoprocess()
 
 

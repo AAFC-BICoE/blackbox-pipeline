@@ -20,6 +20,16 @@ def make_path(inpath):
         if exception.errno != errno.EEXIST:
             raise
 
+def get_version(exe, stdout=False):
+    """
+    :param exe: :type list required
+    :param stdout: test for out
+    :return: stdout/stderr
+    """
+    if stdout:
+        return Popen(exe, stdout=PIPE).stdout.read()
+    else:
+        return Popen(exe, stderr=PIPE).stderr.read()
 
 def make_dict():
     """Makes Perl-style dictionaries"""

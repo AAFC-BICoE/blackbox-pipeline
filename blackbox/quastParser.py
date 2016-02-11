@@ -34,7 +34,7 @@ class Quast(object):
                         format(sample.general.bestassemblyfile, sample.general.quastresults)
                 self.qqueue.put(sample)
             else:
-                sample.commands.QuastCommand = "NA"
+                sample.commands.Quast = "NA"
         self.qqueue.join()
 
     def analyze(self):
