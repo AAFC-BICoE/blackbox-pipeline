@@ -73,7 +73,6 @@ def execute(command, outfile=""):
     # Initialise the starting time
     start = int(time.time())
     maxtime = 0
-    print command
     # Run the commands - direct stdout to PIPE and stderr to stdout
     process = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
     # Write the initial time

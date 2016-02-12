@@ -27,8 +27,8 @@ class Busco(object):
             if sample.general.bestassemblyfile:
                 sample.general.buscoresults = '{}/busco_results'.format(sample.general.outputdirectory)
                 buscotemp = "{}run_{}".format(self.path, sample.name)
-                sample.commands.BUSCO = "python3 {} -in {} -o {} -l {}HMM/{} -m genome".\
-                    format(self.executable, sample.general.bestassemblyfile, sample.name, self.path, self.lineage)
+                sample.commands.BUSCO = "python3 {} -in {} -o {} -l /HMM/{} -m genome".\
+                    format(self.executable, sample.general.bestassemblyfile, sample.name, self.lineage)
                 self.qqueue.put((sample, buscotemp))
             else:
                 sample.commands.BUSCO = "NA"
@@ -42,6 +42,8 @@ class Busco(object):
             tempfile, moved = [os.path.join(x, summary) for x in [temp, sample.general.buscoresults]]
             # Make sure assembled data exists and BUSCO results do not exist
             if sample.general.bestassemblyfile != 'NA' and map(os.path.isfile, [tempfile, moved]) == [False] * 2:
+                if os.path.isdir(temp):  # force incomplete BUSCO runs
+                    sample.commands.BUSCO += " -f"
                 execute(sample.commands.BUSCO)
             if os.path.isfile(tempfile):
                 shutil.move(temp, sample.general.buscoresults)
