@@ -77,7 +77,7 @@ class Busco(object):
         self.metadata = inputobject.runmetadata.samples
         # Retrieve abspath of BUSCO executable using spawn
         self.executable = os.path.abspath(spawn.find_executable("BUSCO_{}.py".format(self.version)))
-        self.pyversion = get_version(['python3', '-c', 'import sys; print(sys.version)'])
+        self.pyversion = get_version(['python3', '-c', 'import sys; print(sys.version)']).rstrip()
         self.start = inputobject.starttime
         self.threads = inputobject.cpus
         self.path = inputobject.path

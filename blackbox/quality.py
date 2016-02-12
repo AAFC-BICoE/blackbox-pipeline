@@ -13,7 +13,7 @@ class Quality(object):
 
     def fastqcthreader(self, level):
         printtime('Running quality control on {} fastq files'.format(level), self.start)
-        version = get_version(['fastqc', '-v'], True).rstrip()
+        version = get_version(['fastqc', '-v']).rstrip()
         for sample in self.metadata:
             if type(sample.general.fastqfiles) is list:
                 # Create and start threads for each fasta file in the list

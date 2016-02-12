@@ -66,7 +66,7 @@ class Quast(object):
                 for line in report:
                     # Use headings in report as keys for the GenObject supplied from generator and replace incrementally
                     # with reduce and lambda function below
-                    k, v = [reduce(lambda a, kv: a.title().replace(*kv), repls, s) for s in line.rstrip().split('\t')]
+                    k, v = [reduce(lambda a, kv: a.replace(*kv), repls, s.title()) for s in line.rstrip().split('\t')]
                     quast[k] = v
             sample.assembly = GenObject(quast)
             sample.assembly.kmers = self.kmers
