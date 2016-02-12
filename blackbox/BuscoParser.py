@@ -27,8 +27,8 @@ class Busco(object):
             if sample.general.bestassemblyfile:
                 sample.general.buscoresults = '{}/busco_results'.format(sample.general.outputdirectory)
                 buscotemp = "{}run_{}".format(self.path, sample.name)
-                sample.commands.BUSCO = "python3 {} -in {} -o {} -l {} -m genome".\
-                    format(self.executable, sample.general.bestassemblyfile, sample.name, self.lineage)
+                sample.commands.BUSCO = "python3 {} -in {} -o {} -l {}HMM/{} -m genome".\
+                    format(self.executable, sample.general.bestassemblyfile, sample.name, self.path, self.lineage)
                 self.qqueue.put((sample, buscotemp))
             else:
                 sample.commands.BUSCO = "NA"
@@ -45,7 +45,7 @@ class Busco(object):
                 execute(sample.commands.BUSCO)
             if os.path.isfile(tempfile):
                 shutil.move(temp, sample.general.buscoresults)
-            elif os.path.isfile(moved):
+            if os.path.isfile(moved):
                 self.metaparse(sample, moved)
             # Signal to the queue that the job is done
             self.qqueue.task_done()
@@ -57,14 +57,19 @@ class Busco(object):
             print "There was an issue getting the metadata from {0:s}".format(sample.name)
         else:
             busco = dict()
+            # Open BUSCO short_summary file and make list of key value pairs then add those the assembly metadata
             with open(resfile) as report:
                 for line in report:
+                    # neccesary to split up ifs to avoid exceptions IndexError
                     if line.strip():
                         if line.strip()[0].isdigit():
-                            v, k = [[n, "".join([pc(y) for y in key.split()])] for n, key in [line.strip().split('\t')]][0]
+                            v, k = [[n, "".join([pc(y) for y in k.split()])] for n, k in [line.strip().split('\t')]][0]
                             busco[k] = v
-            busco.update(sample.assembly.datastore)
-            sample.assembly = GenObject(busco)
+            # TODO: Add support for list of missed BUSCOs
+            # This should probably update the datasore to include new busco keyvalue pairs
+            sample.assembly.datastore.update(busco)
+            # busco.update(sample.assembly.datastore)
+            # sample.assembly = GenObject(busco)
 
     def __init__(self, inputobject):
         from Queue import Queue
