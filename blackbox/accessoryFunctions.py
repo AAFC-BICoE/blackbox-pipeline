@@ -143,23 +143,10 @@ def filer(filelist, extension='fastq'):
 
 
 def relativesymlink(src_file, dest_file):
-    """
-    https://stackoverflow.com/questions/9793631/creating-a-relative-symlink-in-python-without-using-os-chdir
-    :param src_file: the file to be linked
-    :param dest_file: the path and filename to which the file is to be linked
-    """
-    # Perform relative symlinking
-    try:
-        os.symlink(
-            # Find the relative path for the source file and the destination file
-            os.path.relpath(src_file),
-            os.path.relpath(dest_file)
-        )
-    # Except os errors
-    except OSError as exception:
-        # If the os error is anything but directory exists, then raise
-        if exception.errno != errno.EEXIST:
-            raise
+    ret = get_version(['ln', '-s', '-r', src_file, dest_file])
+    if ret and 'File exists' not in ret:
+            raise Exception(ret)
+
 
 
 class GenObject(object):

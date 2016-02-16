@@ -9,7 +9,10 @@ class Spades(object):
     def spades(self):
         from threading import Thread
         import spades
+        # __file__ returns pyc!
         spadespath = spades.__file__
+        if spadespath.endswith('.pyc') and os.path.exists(spadespath[:-1]):
+            spadespath = spadespath[:-1]
         # Find the fastq files for each sample
         # Only make as many threads are there are samples with fastq files
         for i in range(len([sample.general for sample in self.metadata if type(sample.general.fastqfiles) is list])):

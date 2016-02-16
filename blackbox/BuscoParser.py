@@ -27,7 +27,7 @@ class Busco(object):
             if sample.general.bestassemblyfile:
                 sample.general.buscoresults = '{}/busco_results'.format(sample.general.outputdirectory)
                 buscotemp = "{}run_{}".format(self.path, sample.name)
-                sample.commands.BUSCO = "python3 {} -in {} -o {} -l /HMM/{} -m genome".\
+                sample.commands.BUSCO = "python3 {} -in {} -o {} -l /accessoryfiles/{} -m genome".\
                     format(self.executable, sample.general.bestassemblyfile, sample.name, self.lineage)
                 self.qqueue.put((sample, buscotemp))
             else:
