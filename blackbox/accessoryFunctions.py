@@ -73,8 +73,17 @@ def execute(command, outfile=""):
     # Initialise the starting time
     start = int(time.time())
     maxtime = 0
+    # Removing Shell=True to prevent excess memory use thus shlex split is needed
+    if type(command) is not list:
+        import shlex
+        command = shlex.split(command)
     # Run the commands - direct stdout to PIPE and stderr to stdout
-    process = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
+    # DO NOT USE subprocess.PIPE if not writing it!
+    if outfile:
+        process = Popen(command, stdout=PIPE, stderr=STDOUT)
+    else:
+        DEVNULL = open(os.devnull, 'wb')
+        process = Popen(command, stdout=DEVNULL, stderr=STDOUT)
     # Write the initial time
     sys.stdout.write('[{:}] '.format(time.strftime('%H:%M:%S')))
     # Create the output file - if not provided, then nothing should happen
