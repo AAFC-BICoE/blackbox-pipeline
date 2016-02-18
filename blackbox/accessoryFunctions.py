@@ -73,7 +73,7 @@ def execute(command, outfile=""):
     # Initialise the starting time
     start = int(time.time())
     maxtime = 0
-    # Removing Shell=True to prevent excess memory use thus shlex split is needed
+    # Removing Shell=True to prevent excess memory use thus shlex split if needed
     if type(command) is not list:
         import shlex
         command = shlex.split(command)
