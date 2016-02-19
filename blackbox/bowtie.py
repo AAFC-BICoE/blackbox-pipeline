@@ -1,25 +1,108 @@
 #!/usr/bin/env python
-from Bio.Application import _Option, AbstractCommandline, _Switch
+from Bio.Application import _Option, AbstractCommandline, _Switch, _Argument
 import re
 
 __author__ = 'mike knowles'
 __doc__ = 'Wrapper for bowtie2'
 
 
-class MakeBlastDB(AbstractCommandline):
-    """Base makeblastdb wrapper"""
+class _Bowtie2BaseCommandLine(AbstractCommandline):
+    """Base bowtie wrapper"""
+
+    def __init__(self, cmd=None, **kwargs):
+        assert cmd is not None
+        extra_parameters = [
+            _Switch(["-h", "h"],
+                    "Print USAGE and DESCRIPTION;  ignore other arguments."),
+            _Switch(["--help", "help"],
+                    "Print USAGE, DESCRIPTION and ARGUMENTS description; "
+                    "ignore other arguments."),
+            _Switch(["--version", "version"],
+                    "Print version number;  ignore other arguments."),
+        ]
+        try:
+            # Insert extra parameters - at the start just in case there
+            # are any arguments which must come last:
+            self.parameters = extra_parameters + self.parameters
+        except AttributeError:
+            # Should we raise an error?  The subclass should have set this up!
+            self.parameters = extra_parameters
+        AbstractCommandline.__init__(self, cmd, **kwargs)
+
+    def _validate(self):
+        AbstractCommandline._validate(self)
+
+    def _validate_incompatibilities(self, incompatibles):
+        """Used by the BLAST+ _validate method (PRIVATE)."""
+        for a in incompatibles:
+            if self._get_parameter(a):
+                for b in incompatibles[a]:
+                    if self._get_parameter(b):
+                        raise ValueError("Options %s and %s are incompatible."
+                                         % (a, b))
+
+
+class Bowtie2CommandLine(_Bowtie2BaseCommandLine):
+    """Base Bowtie2 wrapper"""
 
     def __init__(self, cmd='bowtie2', **kwargs):
         assert cmd is not None
+        self.parameters = [
+            _Option(["-x", "bt2_idx"],
+                    "The basename of the index for the reference genome. The basename is the name of any of the index "
+                    "files up to but not including the final .1.bt2 / .rev.1.bt2 / etc. bowtie2 looks for the "
+                    "specified index first in the current directory, then in the directory specified in the "
+                    "BOWTIE2_INDEXES environment variable",
+                    filename=True,
+                    equate=False),
+
+            _Option(["-1", "m1"],
+                    "Comma-separated list of files containing mate 1s (filename usually includes _1), "
+                    "e.g. -1 flyA_1.fq,flyB_1.fq. Sequences specified with this option must correspond file-for-file "
+                    "and read-for-read with those specified in <m2>. Reads may be a mix of different lengths. If - is "
+                    "specified, bowtie2 will read the mate 1s from the standard in or stdin filehandle",
+                    equate=False),
+
+            _Option(["-2", "m2"],
+                    "Comma-separated list of files containing mate 2s (filename usually includes _2), "
+                    "e.g. -2 flyA_2.fq,flyB_2.fq. Sequences specified with this option must correspond file-for-file "
+                    "and read-for-read with those specified in <m1>. Reads may be a mix of different lengths. If - is "
+                    "specified, bowtie2 will read the mate 2s from the standard in or stdin filehandle",
+                    equate=False),
+
+            _Option(["-U", "U"],
+                    "Comma-separated list of files containing unpaired reads to be aligned, e.g. lane1.fq,lane2.fq,"
+                    "lane3.fq,lane4.fq. Reads may be a mix of different lengths. If - is specified, bowtie2 gets the "
+                    "reads from the standard in or stdin filehandle",
+                    equate=False),
+            _Option(['-S', 'S'],
+                    "File to write SAM alignments to. By default, alignments are written to the standard out or "
+                    "stdout filehandle (i.e. the console)",
+                    filename=True,
+                    equate=False)
+
+        ]
         extra_parameters = [
-            # Core:
-            _Switch(["-h", "h"],
-                    "Print USAGE and DESCRIPTION;  ignore other arguments."),
-            _Switch(["-help", "help"],
-                    "Print USAGE, DESCRIPTION and ARGUMENTS description; "
-                    "ignore other arguments."),
-            _Switch(["-version", "version"],
-                    "Print version number;  ignore other arguments."),
+            # Other options
+            _Option(["--seed", "seed"],
+                    "Use <int> as the seed for pseudo-random number generator. Default: 0",
+                    checker_function=lambda value: type(value) is int,
+                    equate=False),
+            _Switch(["--non-deterministic", "non_deterministic"],
+                    "Normally, Bowtie 2 re-initializes its pseudo-random generator for each read. It seeds the "
+                    "generator with a number derived from (a) the read name, (b) the nucleotide sequence, "
+                    "(c) the quality sequence, (d) the value of the --seed option. This means that if two reads are "
+                    "identical (same name, same nucleotides, same qualities) Bowtie 2 will find and report the same "
+                    "alignment(s) for both, even if there was ambiguity. When --non-deterministic is specified, "
+                    "Bowtie 2 re-initializes its pseudo-random generator for each read using the current time. This "
+                    "means that Bowtie 2 will not necessarily report the same alignment for two identical reads. This "
+                    "is counter-intuitive for some users, but might be more appropriate in situations where the input "
+                    "consists of many identical reads"),
+
+            _Switch(["--qc-filter", "qc_filter"],
+                    "Filter out reads for which the QSEQ filter field is non-zero. Only has an effect when read "
+                    "format is --qseq. Default: off"),
+
 
             # Input Options
             _Switch(["-q", "fastq"],
@@ -132,15 +215,15 @@ class MakeBlastDB(AbstractCommandline):
                     "function options. Reads exceeding this ceiling are filtered out. Default: L,0,0.15.",
                     checker_function=lambda value: re.match('^[CLSG],[-\d\.],[-\d\.]', value) is not None,
                     equate=False),
-            _Option(["--gbar", "-gbar"],
+            _Option(["--gbar", "gbar"],
                     "Disallow gaps within <int> positions of the beginning or end of the read. Default: 4.",
                     checker_function=lambda value: type(value) is int,
                     equate=False),
-            _Option(["--dpad", "-dpad"],
+            _Option(["--dpad", "dpad"],
                     "Pads dynamic programming problems by <int> columns on either side to allow gaps. Default: 15.",
                     checker_function=lambda value: type(value) is int,
                     equate=False),
-            _Switch(["--ignore-quals", "ignore-quals"],
+            _Switch(["--ignore-quals", "ignore_quals"],
                     "When calculating a mismatch penalty, always consider the quality value at the mismatched position "
                     "to be the highest possible, regardless of the actual value. I.e. input is treated as though all "
                     "quality values are high. This is also the default behavior when the input doesn't specify quality "
@@ -155,7 +238,7 @@ class MakeBlastDB(AbstractCommandline):
                     "complement Crick reference strand. In paired-end mode, --nofw and --norc pertain to the fragments;"
                     " i.e. specifying --nofw causes bowtie2 to explore only those paired-end configurations "
                     "corresponding to fragments from the reverse-complement (Crick) strand. Default: both strands"),
-            _Switch(["--no-1mm-upfront", "no-1mm-upfront"],
+            _Switch(["--no-1mm-upfront", "no_1mm_upfront"],
                     "By default, Bowtie 2 will attempt to find either an exact or a 1-mismatch end-to-end alignment"
                     " for the read before trying the multiseed heuristic. Such alignments can be found very quickly,"
                     " and many short read alignments have exact or near-exact end-to-end alignments. However, this can "
@@ -165,7 +248,7 @@ class MakeBlastDB(AbstractCommandline):
                     "from searching for 1-mismatch end-to-end alignments before using the multiseed heuristic, which "
                     "leads to the expected behavior when combined with options such as -L and -N. This comes at the "
                     "expense of speed"),
-            _Switch(["--end-to-end", "end-to-end"],
+            _Switch(["--end-to-end", "end_to_end"],
                     "In this mode, Bowtie 2 requires that the entire read align from one end to the other, without any "
                     "trimming (or soft clipping) of characters from either end. The match bonus --ma always equals 0 in"
                     " this mode, so all alignment scores are less than or equal to 0, and the greatest possible "
@@ -268,8 +351,8 @@ class MakeBlastDB(AbstractCommandline):
                     "60-bp gap between them, that alignment is considered valid (as long as -I is also satisfied). "
                     "A 61-bp gap would not be valid in that case. If trimming options -3 or -5 are also used, the "
                     "-X constraint is applied with respect to the untrimmed mates, not the trimmed mates. The larger "
-                    "the difference between -I and -X, the slower Bowtie 2 will run. This is because larger differences "
-                    "bewteen -I and -X require that Bowtie 2 scan a larger window to determine if a concordant "
+                    "the difference between -I and -X, the slower Bowtie 2 will run. This is because larger differences"
+                    " bewteen -I and -X require that Bowtie 2 scan a larger window to determine if a concordant "
                     "alignment exists. For typical fragment length ranges (200 to 400 nucleotides), "
                     "Bowtie 2 is very efficient. Default: 500",
                     checker_function=lambda value: type(value) is int,
@@ -305,11 +388,11 @@ class MakeBlastDB(AbstractCommandline):
                     "and a downstream mate2 be forward-oriented. --ff requires both an upstream mate 1 and a "
                     "downstream mate 2 to be forward-oriented. "
                     "Default: --fr (appropriate for Illumina's Paired-end Sequencing Assay)."),
-            _Switch(["--no-mixed", "no-mixed"],
+            _Switch(["--no-mixed", "no_mixed"],
                     "By default, when bowtie2 cannot find a concordant or discordant alignment for a pair, it "
                     "then tries to find alignments for the individual mates. This option disables that behavior."),
 
-            _Switch(["--no-discordant", "no-discordant"],
+            _Switch(["--no-discordant", "no_discordant"],
                     "By default, bowtie2 looks for discordant alignments if it cannot find any concordant "
                     "alignments. A discordant alignment is an alignment where both mates align uniquely, "
                     "but that does not satisfy the paired-end constraints (--fr/--rf/--ff, -I, -X). "
@@ -321,26 +404,260 @@ class MakeBlastDB(AbstractCommandline):
                     "Mates can overlap, contain or dovetail each other. Default: mates cannot dovetail "
                     "in a concordant alignment."),
 
-            _Switch(["--no-contain", "no-contain"],
+            _Switch(["--no-contain", "no_contain"],
                     "If one mate alignment contains the other, consider that to be non-concordant. See also: "
                     "Mates can overlap, contain or dovetail each other. Default: a mate can contain "
                     "the other in a concordant alignment."),
 
-            _Switch(["--no-overlap", "no-overlap"],
+            _Switch(["--no-overlap", "no_overlap"],
                     "If one mate alignment overlaps the other at all, consider that to be non-concordant. See "
                     "also: Mates can overlap, contain or dovetail each other. Default: mates can overlap in "
                     "a concordant alignment."),
 
             # SAM options
-            _Switch(["--no-unal", "no-unal"],
+            _Switch(["--no-unal", "no_unal"],
                     "Suppress SAM records for reads that failed to align"),
-            _Switch(["--no-hd", "no-hd"],
+            _Switch(["--no-hd", "no_hd"],
                     "Suppress SAM header lines (starting with"),
-            _Switch(["--no-sq", "no-sq"],
+            _Switch(["--no-sq", "no_sq"],
                     "Suppress @SQ SAM header lines"),
-            _Switch(["--omit-sec-seq", "omit-sec-seq"],
+            _Switch(["--omit-sec-seq", "omit_sec_seq"],
                     "When printing secondary alignments, Bowtie 2 by default will write out the SEQ and QUAL strings. "
                     "Specifying this option causes Bowtie 2 to print an asterix in those fields instead."),
+            _Option(["--rg-id", "rg_id"],
+                    "Set the read group ID to <text>. This causes the SAM @RG header line to be printed, with <text> as"
+                    " the value associated with the ID: tag. It also causes the RG:Z: extra field to be attached to "
+                    "each SAM output record, with value set to <text>.",
+                    checker_function=lambda value: type(value) is str,
+                    equate=False),
+            _Option(["--rg", "rg"],
+                    "Add <text> (usually of the form TAG:VAL, e.g. SM:Pool1) as a field on the @RG header line. Note: "
+                    "in order for the @RG line to appear, --rg-id must also be specified. This is because the ID tag is"
+                    " required by the SAM Spec. Specify --rg multiple times to set multiple fields. See the SAM "
+                    "Spec for details about what fields are legal.",
+                    checker_function=lambda value: type(value) is str,
+                    equate=False),
+
+            # Output options
+            _Option(["--un", "un"],
+                    "Write unpaired reads that fail to align to file at <path>. These reads correspond to the SAM "
+                    "records with the FLAGS 0x4 bit set and neither the 0x40 nor 0x80 bits set. Reads written in this "
+                    "way will appear exactly as they did in the input file, without any modification (same sequence, "
+                    "same name, same quality string, same quality encoding). Reads will not necessarily appear in the "
+                    "same order as they did in the input",
+                    filename=True,
+                    equate=False),
+            _Option(["--un-gz", "un_gz"],
+                    "Write unpaired reads that fail to align to file at <path>. These reads correspond to the SAM "
+                    "records with the FLAGS 0x4 bit set and neither the 0x40 nor 0x80 bits set. If --un-gz is "
+                    "specified, output will be gzip compressed. Reads written in this way will appear exactly as they "
+                    "did in the input file, without any modification (same sequence, same name, same quality string, "
+                    "same quality encoding). Reads will not necessarily appear in the same order as they did in the "
+                    "input",
+                    filename=True,
+                    equate=False),
+            _Option(["--un-bz2", "un_bz2"],
+                    "Write unpaired reads that fail to align to file at <path>. These reads correspond to the SAM "
+                    "records with the FLAGS 0x4 bit set and neither the 0x40 nor 0x80 bits set.  If --un-bz2 is "
+                    "specified, output will be bzip2 compressed. Reads written in this way will appear exactly as "
+                    "they did in the input file, without any modification (same sequence, same name, same quality "
+                    "string, same quality encoding). Reads will not necessarily appear in the same order as they did "
+                    "in the input",
+                    filename=True,
+                    equate=False),
+            _Option(["--un-lz4", "un_lz4"],
+                    "Write unpaired reads that fail to align to file at <path>. These reads correspond to the SAM "
+                    "records with the FLAGS 0x4 bit set and neither the 0x40 nor 0x80 bits set. If --un-lz4 is "
+                    "specified, output will be lz4 compressed. Reads written in this way will appear exactly as they "
+                    "did in the input file, without any modification (same sequence, same name, same quality string, "
+                    "same quality encoding). Reads will not necessarily appear in the same order as they did in the "
+                    "input",
+                    filename=True,
+                    equate=False),
+
+            _Option(["--al", "al"],
+                    "Write unpaired reads that align at least once to file at <path>. These reads correspond to the "
+                    "SAM records with the FLAGS 0x4, 0x40, and 0x80 bits unset. Reads written in this way will appear "
+                    "exactly as they did in the input file, without any modification (same sequence, same name, "
+                    "same quality string, same quality encoding). Reads will not necessarily appear in the same order "
+                    "as they did in the input",
+                    filename=True,
+                    equate=False),
+            _Option(["--al-gz", "al_gz"],
+                    "Write unpaired reads that align at least once to file at <path>. These reads correspond to the "
+                    "SAM records with the FLAGS 0x4, 0x40, and 0x80 bits unset. If --al-gz is specified, output will "
+                    "be gzip compressed. Reads written in this way will appear exactly as they did in the input file, "
+                    "without any modification (same sequence, same name, same quality string, same quality encoding). "
+                    "Reads will not necessarily appear in the same order as they did in the input",
+                    filename=True,
+                    equate=False),
+            _Option(["--al-bz2", "al_bz2"],
+                    "Write unpaired reads that align at least once to file at <path>. These reads correspond to the "
+                    "SAM records with the FLAGS 0x4, 0x40, and 0x80 bits unset. If --al-bz2 is specified, output will "
+                    "be bzip2 compressed. Reads written in this way will appear exactly as they did in the input "
+                    "file, without any modification (same sequence, same name, same quality string, same quality "
+                    "encoding). Reads will not necessarily appear in the same order as they did in the input",
+                    filename=True,
+                    equate=False),
+            _Option(["--al-lz4", "al_lz4"],
+                    "Write unpaired reads that align at least once to file at <path>. These reads correspond to the "
+                    "SAM records with the FLAGS 0x4, 0x40, and 0x80 bits unset. If --al-lz4 is specified, output will "
+                    "be lz4 compressed. Reads written in this way will appear exactly as they did in the input file, "
+                    "without any modification (same sequence, same name, same quality string, same quality encoding). "
+                    "Reads will not necessarily appear in the same order as they did in the input",
+                    filename=True,
+                    equate=False),
+
+            _Option(["--un-conc", "un_conc"],
+                    "Write paired-end reads that fail to align concordantly to file(s) at <path>. These reads "
+                    "correspond to the SAM records with the FLAGS 0x4 bit set and either the 0x40 or 0x80 bit set ("
+                    "depending on whether it's mate #1 or #2). .1 and .2 strings are added to the filename to "
+                    "distinguish which file contains mate #1 and mate #2. If a percent symbol, %, is used in <path>, "
+                    "the percent symbol is replaced with 1 or 2 to make the per-mate filenames. Otherwise, "
+                    ".1 or .2 are added before the final dot in <path> to make the per-mate filenames. Reads written "
+                    "in this way will appear exactly as they did in the input files, without any modification (same "
+                    "sequence, same name, same quality string, same quality encoding). Reads will not necessarily "
+                    "appear in the same order as they did in the inputs",
+                    filename=True,
+                    equate=False),
+            _Option(["--un-conc-gz", "un_conc_gz"],
+                    "Write paired-end reads that fail to align concordantly to file(s) at <path>. These reads "
+                    "correspond to the SAM records with the FLAGS 0x4 bit set and either the 0x40 or 0x80 bit set ("
+                    "depending on whether it's mate #1 or #2). .1 and .2 strings are added to the filename to "
+                    "distinguish which file contains mate #1 and mate #2. If a percent symbol, %, is used in <path>, "
+                    "the percent symbol is replaced with 1 or 2 to make the per-mate filenames. Otherwise, "
+                    ".1 or .2 are added before the final dot in <path> to make the per-mate filenames. Reads written "
+                    "in this way will appear exactly as they did in the input files, without any modification (same "
+                    "sequence, same name, same quality string, same quality encoding). Reads will not necessarily "
+                    "appear in the same order as they did in the inputs",
+                    filename=True,
+                    equate=False),
+            _Option(["--un-conc-bz2", "un_conc_bz2"],
+                    "Write paired-end reads that fail to align concordantly to file(s) at <path>. These reads "
+                    "correspond to the SAM records with the FLAGS 0x4 bit set and either the 0x40 or 0x80 bit set ("
+                    "depending on whether it's mate #1 or #2). .1 and .2 strings are added to the filename to "
+                    "distinguish which file contains mate #1 and mate #2. If a percent symbol, %, is used in <path>, "
+                    "the percent symbol is replaced with 1 or 2 to make the per-mate filenames. Otherwise, "
+                    ".1 or .2 are added before the final dot in <path> to make the per-mate filenames. Reads written "
+                    "in this way will appear exactly as they did in the input files, without any modification (same "
+                    "sequence, same name, same quality string, same quality encoding). Reads will not necessarily "
+                    "appear in the same order as they did in the inputs",
+                    filename=True,
+                    equate=False),
+            _Option(["--un-conc-lz4", "un_conc_lz4"],
+                    "Write paired-end reads that fail to align concordantly to file(s) at <path>. These reads "
+                    "correspond to the SAM records with the FLAGS 0x4 bit set and either the 0x40 or 0x80 bit set ("
+                    "depending on whether it's mate #1 or #2). .1 and .2 strings are added to the filename to "
+                    "distinguish which file contains mate #1 and mate #2. If a percent symbol, %, is used in <path>, "
+                    "the percent symbol is replaced with 1 or 2 to make the per-mate filenames. Otherwise, "
+                    ".1 or .2 are added before the final dot in <path> to make the per-mate filenames. Reads written "
+                    "in this way will appear exactly as they did in the input files, without any modification (same "
+                    "sequence, same name, same quality string, same quality encoding). Reads will not necessarily "
+                    "appear in the same order as they did in the inputs",
+                    filename=True,
+                    equate=False),
+
+            _Option(["--al-conc", "al_conc"],
+                    "Write paired-end reads that align concordantly at least once to file(s) at <path>. These reads "
+                    "correspond to the SAM records with the FLAGS 0x4 bit unset and either the 0x40 or 0x80 bit set ("
+                    "depending on whether it's mate #1 or #2). .1 and .2 strings are added to the filename to "
+                    "distinguish which file contains mate #1 and mate #2. If a percent symbol, %, is used in <path>, "
+                    "the percent symbol is replaced with 1 or 2 to make the per-mate filenames. Otherwise, "
+                    ".1 or .2 are added before the final dot in <path> to make the per-mate filenames. Reads written "
+                    "in this way will appear exactly as they did in the input files, without any modification (same "
+                    "sequence, same name, same quality string, same quality encoding). Reads will not necessarily "
+                    "appear in the same order as they did in the inputs",
+                    filename=True,
+                    equate=False),
+            _Option(["--al-conc-gz", "al_conc_gz"],
+                    "Write paired-end reads that align concordantly at least once to file(s) at <path>. These reads "
+                    "correspond to the SAM records with the FLAGS 0x4 bit unset and either the 0x40 or 0x80 bit set ("
+                    "depending on whether it's mate #1 or #2). .1 and .2 strings are added to the filename to "
+                    "distinguish which file contains mate #1 and mate #2. If a percent symbol, %, is used in <path>, "
+                    "the percent symbol is replaced with 1 or 2 to make the per-mate filenames. Otherwise, "
+                    ".1 or .2 are added before the final dot in <path> to make the per-mate filenames. Reads written "
+                    "in this way will appear exactly as they did in the input files, without any modification (same "
+                    "sequence, same name, same quality string, same quality encoding). Reads will not necessarily "
+                    "appear in the same order as they did in the inputs",
+                    filename=True,
+                    equate=False),
+            _Option(["--al-conc-bz2", "al_conc_bz2"],
+                    "Write paired-end reads that align concordantly at least once to file(s) at <path>. These reads "
+                    "correspond to the SAM records with the FLAGS 0x4 bit unset and either the 0x40 or 0x80 bit set ("
+                    "depending on whether it's mate #1 or #2). .1 and .2 strings are added to the filename to "
+                    "distinguish which file contains mate #1 and mate #2. If a percent symbol, %, is used in <path>, "
+                    "the percent symbol is replaced with 1 or 2 to make the per-mate filenames. Otherwise, "
+                    ".1 or .2 are added before the final dot in <path> to make the per-mate filenames. Reads written "
+                    "in this way will appear exactly as they did in the input files, without any modification (same "
+                    "sequence, same name, same quality string, same quality encoding). Reads will not necessarily "
+                    "appear in the same order as they did in the inputs",
+                    filename=True,
+                    equate=False),
+            _Option(["--al-conc-lz4", "al_conc_lz4"],
+                    "Write paired-end reads that align concordantly at least once to file(s) at <path>. These reads "
+                    "correspond to the SAM records with the FLAGS 0x4 bit unset and either the 0x40 or 0x80 bit set ("
+                    "depending on whether it's mate #1 or #2). .1 and .2 strings are added to the filename to "
+                    "distinguish which file contains mate #1 and mate #2. If a percent symbol, %, is used in <path>, "
+                    "the percent symbol is replaced with 1 or 2 to make the per-mate filenames. Otherwise, "
+                    ".1 or .2 are added before the final dot in <path> to make the per-mate filenames. Reads written "
+                    "in this way will appear exactly as they did in the input files, without any modification (same "
+                    "sequence, same name, same quality string, same quality encoding). Reads will not necessarily "
+                    "appear in the same order as they did in the inputs",
+                    filename=True,
+                    equate=False),
+
+            _Option(["--met-file", "met_file"],
+                    "Write bowtie2 metrics to file <path>. Having alignment metric can be useful for debugging "
+                    "certain problems, especially performance issues. See also: --met. Default: metrics disabled",
+                    filename=True,
+                    equate=False),
+
+            _Option(["--met-stderr", "met_stderr"],
+                    "Write bowtie2 metrics to the standard error (stderr) filehandle. This is not mutually exclusive "
+                    "with --met-file. Having alignment metric can be useful for debugging certain problems, "
+                    "especially performance issues. See also: --met. Default: metrics disabled",
+                    filename=True,
+                    equate=False),
+
+            _Option(["--met", "met"],
+                    "Write a new bowtie2 metrics record every <int> seconds. Only matters if either --met-stderr or "
+                    "--met-file are specified. Default: 1.",
+                    checker_function=lambda value: type(value) is int,
+                    equate=False),
+            _Switch(["--time", "time"],
+                    "Print the wall-clock time required to load the index files and align the reads. This is printed "
+                    "to the standard error (stderr) filehandle. Default: off"),
+            _Switch(["--quiet", "quiet"],
+                    "Print nothing besides alignments and serious errors"),
+            # Preformance Options
+            _Option(["--offrate", "offrate"],
+                    "Override the offrate of the index with <int>. If <int> is greater than the offrate used to build "
+                    "the index, then some row markings are discarded when the index is read into memory. This reduces "
+                    "the memory footprint of the aligner but requires more time to calculate text offsets. <int> must "
+                    "be greater than the value used to build the index",
+                    checker_function=lambda value: type(value) is int,
+                    equate=False),
+            _Option(["--threads", "threads"],
+                    "Launch NTHREADS parallel search threads (default: 1). Threads will run on separate "
+                    "processors/cores and synchronize when parsing reads and outputting alignments. Searching for "
+                    "alignments is highly parallel, and speedup is close to linear. Increasing -p increases Bowtie "
+                    "2's memory footprint. E.g. when aligning to a human genome index, increasing -p from 1 to 8 "
+                    "increases the memory footprint by a few hundred megabytes. This option is only available if "
+                    "bowtie is linked with the pthreads library (i.e. if BOWTIE_PTHREADS=0 is not specified at build "
+                    "time)",
+                    checker_function=lambda value: type(value) is int,
+                    equate=False),
+            _Switch(["--reorder", "reorder"],
+                    "Guarantees that output SAM records are printed in an order corresponding to the order of the "
+                    "reads in the original input file, even when -p is set greater than 1. Specifying --reorder and "
+                    "setting -p greater than 1 causes Bowtie 2 to run somewhat slower and use somewhat more memory "
+                    "then if --reorder were not specified. Has no effect if -p is set to 1, since output order will "
+                    "naturally correspond to input order in that case"),
+            _Switch(["--mm", "mm"],
+                    "Use memory-mapped I/O to load the index, rather than typical file I/O. Memory-mapping allows "
+                    "many concurrent bowtie processes on the same computer to share the same memory image of the "
+                    "index (i.e. you pay the memory overhead just once). This facilitates memory-efficient "
+                    "parallelization of bowtie in situations where using -p is not possible or not preferable"),
         ]
         try:
             # Insert extra parameters - at the start just in case there
@@ -349,10 +666,169 @@ class MakeBlastDB(AbstractCommandline):
         except AttributeError:
             # Should we raise an error?  The subclass should have set this up!
             self.parameters = extra_parameters
-        AbstractCommandline.__init__(self, cmd, **kwargs)
+        _Bowtie2BaseCommandLine.__init__(self, cmd, **kwargs)
+
+    def _validate(self):
+        incompatibles = {}
+        self._validate_incompatibilities(incompatibles)
+        # TODO add incompatibilites
+        # if self.entrez_query and not self.remote:
+        #     raise ValueError("Option entrez_query requires remote option.")
+        _Bowtie2BaseCommandLine._validate(self)
+
+
+class _Bowtie2SeqBaseCommandLine(_Bowtie2BaseCommandLine):
+    """Base bowtie wrapper"""
+
+    def __init__(self, cmd=None, **kwargs):
+        assert cmd is not None
+        self.parameters = [
+            _Argument(["bt2"],
+                      "bt2 filename minus trailing .1.bt2/.2.bt2. bt2 data to files with this dir/basename")
+        ]
+        extra_parameters = [
+            _Switch(["--large-index", "large_index"],
+                    "Force bowtie2-build to build a large index, even if the reference is less than ~ 4 billion "
+                    "nucleotides inlong."),
+        ]
+        try:
+            # Insert extra parameters - at the start just in case there
+            # are any arguments which must come last:
+            self.parameters = extra_parameters + self.parameters
+        except AttributeError:
+            # Should we raise an error?  The subclass should have set this up!
+            self.parameters = extra_parameters
+        _Bowtie2BaseCommandLine.__init__(self, cmd, **kwargs)
+
+    def _validate(self):
+            incompatibles = {}
+            self._validate_incompatibilities(incompatibles)
+            _Bowtie2BaseCommandLine._validate(self)
+
+
+class Bowtie2BuildCommandLine(_Bowtie2SeqBaseCommandLine):
+    """Base bowtie2-build wrapper"""
+
+    def __init__(self, cmd='bowtie2-build', **kwargs):
+        assert cmd is not None
+        self.parameters = [
+            _Argument(["reference_in"],
+                      "comma-separated list of files with ref sequences")
+        ]
+        extra_parameters = [
+            # Other options
+            _Option(["--seed", "seed"],
+                    "Use <int> as the seed for pseudo-random number generator. Default: 0",
+                    checker_function=lambda value: type(value) is int,
+                    equate=False),
+            _Switch(["--quiet", "quiet"],
+                    "Print nothing besides alignments and serious errors"),
+            _Option(["--bmax", "bmax"],
+                    "The maximum number of suffixes allowed in a block. Allowing more suffixes per block makes "
+                    "indexing faster, but increases peak memory usage. Setting this option overrides any previous "
+                    "setting for --bmax, or --bmaxdivn. Default (in terms of the --bmaxdivn parameter) is --bmaxdivn "
+                    "4. This is configured automatically by default; use -a/--noauto to configure manually",
+                    checker_function=lambda value: type(value) is int,
+                    equate=False),
+            _Option(["--bmaxdivn", "bmaxdivn"],
+                    "The maximum number of suffixes allowed in a block, expressed as a fraction of the length of the "
+                    "reference. Setting this option overrides any previous setting for --bmax, or --bmaxdivn. "
+                    "Default: --bmaxdivn 4. This is configured automatically by default; use -a/--noauto to configure "
+                    "manually",
+                    checker_function=lambda value: type(value) is int,
+                    equate=False),
+            _Option(["--dcv", "dcv"],
+                    "Use <int> as the period for the difference-cover sample. A larger period yields less memory "
+                    "overhead, but may make suffix sorting slower, especially if repeats are present. Must be a power "
+                    "of 2 no greater than 4096. Default: 1024. This is configured automatically by default; use "
+                    "-a/--noauto to configure manually",
+                    checker_function=lambda value: type(value) is int,
+                    equate=False),
+            _Option(["--offrate", "offrate"],
+                    "To map alignments back to positions on the reference sequences, it's necessary to annotate ("
+                    "mark) some or all of the Burrows-Wheeler rows with their corresponding location on the genome. "
+                    "-o/--offrate governs how many rows get marked: the indexer will mark every 2^<int> rows. Marking "
+                    "more rows makes reference-position lookups faster, but requires more memory to hold the "
+                    "annotations at runtime. The default is 5 (every 32nd row is marked; for human genome, "
+                    "annotations occupy about 340 megabytes)",
+                    checker_function=lambda value: type(value) is int,
+                    equate=False),
+            _Option(["--ftabchars", "ftabchars"],
+                    "The ftab is the lookup table used to calculate an initial Burrows-Wheeler range with respect to "
+                    "the first <int> characters of the query. A larger <int> yields a larger lookup table but faster "
+                    "query times. The ftab has size 4^(<int>+1) bytes. The default setting is 10 (ftab is 4MB)",
+                    checker_function=lambda value: type(value) is int,
+                    equate=False),
+            _Option(["--cutoff", "cutoff"],
+                    "Index only the first <int> bases of the reference sequences (cumulative across sequences) and "
+                    "ignore the rest",
+                    checker_function=lambda value: type(value) is int,
+                    equate=False),
+            _Switch(["-f", "f"],
+                    "The reference input files (specified as <reference_in>) are FASTA files (usually having "
+                    "extension .fa, .mfa, .fna or similar)."),
+            _Switch(["-c", "c"],
+                    "The reference sequences are given on the command line. I.e. <reference_in> is a comma-separated "
+                    "list of sequences rather than a list of FASTA files."),
+            _Switch(["--noauto", "noauto"],
+                    "Disable the default behavior whereby bowtie2-build automatically selects values for the --bmax, "
+                    "--dcv and --packed parameters according to available memory. Instead, user may specify values "
+                    "for those parameters. If memory is exhausted during indexing, an error message will be printed; "
+                    "it is up to the user to try new parameters."),
+            _Switch(["--packed", "packed"],
+                    "Use a packed (2-bits-per-nucleotide) representation for DNA strings. This saves memory but makes "
+                    "indexing 2-3 times slower. Default: off. This is configured automatically by default; use "
+                    "-a/--noauto to configure manually."),
+            _Switch(["--nodc", "nodc"],
+                    "Disable use of the difference-cover sample. Suffix sorting becomes quadratic-time in the worst "
+                    "case (where the worst case is an extremely repetitive reference). Default: off."),
+            _Switch(["--noref", "noref"],
+                    "Do not build the NAME.3.bt2 and NAME.4.bt2 portions of the index, which contain a bitpacked "
+                    "version of the reference sequences and are used for paired-end alignment."),
+            _Switch(["--justref", "justref"],
+                    "Build only the NAME.3.bt2 and NAME.4.bt2 portions of the index, which contain a bitpacked "
+                    "version of the reference sequences and are used for paired-end alignment."),
+        ]
+        try:
+            # Insert extra parameters - at the start just in case there
+            # are any arguments which must come last:
+            self.parameters = extra_parameters + self.parameters
+        except AttributeError:
+            # Should we raise an error?  The subclass should have set this up!
+            self.parameters = extra_parameters
+        _Bowtie2SeqBaseCommandLine.__init__(self, cmd, **kwargs)
+
+
+class Bowtie2InspectCommandLine(_Bowtie2SeqBaseCommandLine):
+    """Base bowtie2-inspoect wrapper"""
+
+    def __init__(self, cmd='bowtie2-inspect', **kwargs):
+        assert cmd is not None
+        self.parameters = list()
+        extra_parameters = [
+            _Option(["--across", "across"],
+                    "When printing FASTA output, output a newline character every <int> bases (default: 60).",
+                    checker_function=lambda value: type(value) is int,
+                    equate=False),
+            _Switch(["--names", "names"],
+                    "Print reference sequence names, one per line, and quit."),
+            _Switch(["--summary", "summary"],
+                    "Print a summary that includes information about index settings, as well as the names and lengths "
+                    "of the input sequences. Fields are separated by tabs. Colorspace is always set to 0 for Bowtie "
+                    "2."),
+            _Switch(["--verbose", "verbose"],
+                    "Print verbose output (for debugging)."),
+        ]
+        try:
+            # Insert extra parameters - at the start just in case there
+            # are any arguments which must come last:
+            self.parameters = extra_parameters + self.parameters
+        except AttributeError:
+            # Should we raise an error?  The subclass should have set this up!
+            self.parameters = extra_parameters
+        _Bowtie2SeqBaseCommandLine.__init__(self, cmd, **kwargs)
 
 
 if __name__ == '__main__':
-    x = 0
-    type
-    pass
+    # print Bowtie2CommandLine("/usr/local/bin/bowtie2", num_mismatches="1")
+    print Bowtie2InspectCommandLine(bt2="test")
