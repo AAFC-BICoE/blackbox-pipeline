@@ -33,13 +33,25 @@ class _Bowtie2BaseCommandLine(AbstractCommandline):
         AbstractCommandline._validate(self)
 
     def _validate_incompatibilities(self, incompatibles):
-        """Used by the BLAST+ _validate method (PRIVATE)."""
-        for a in incompatibles:
-            if self._get_parameter(a):
-                for b in incompatibles[a]:
-                    if self._get_parameter(b):
-                        raise ValueError("Options %s and %s are incompatible."
-                                         % (a, b))
+        """Used by the bowtie _validate method (PRIVATE)."""
+        for element in incompatibles:
+            if type(element) is list:
+                i = [a for a in element if self._get_parameter(a)]
+                if len(i) > 1:
+                    raise ValueError("Options {} are incompatible".format(" and ".join(i)))
+            elif type(incompatibles) is dict:
+                if self._get_parameter(element):
+                        for b in incompatibles[element]:
+                            if self._get_parameter(b):
+                                raise ValueError("Options %s and %s are incompatible."
+                                                 % (element, b))
+            else:
+                for a in element:
+                    if self._get_parameter(a):
+                        for b in incompatibles[a]:
+                            if self._get_parameter(b):
+                                raise ValueError("Options %s and %s are incompatible."
+                                                 % (a, b))
 
 
 class Bowtie2CommandLine(_Bowtie2BaseCommandLine):
@@ -48,7 +60,7 @@ class Bowtie2CommandLine(_Bowtie2BaseCommandLine):
     def __init__(self, cmd='bowtie2', **kwargs):
         assert cmd is not None
         self.parameters = [
-            _Option(["-x", "bt2_idx"],
+            _Option(["-x", "bt2"],
                     "The basename of the index for the reference genome. The basename is the name of any of the index "
                     "files up to but not including the final .1.bt2 / .rev.1.bt2 / etc. bowtie2 looks for the "
                     "specified index first in the current directory, then in the directory specified in the "
@@ -669,11 +681,17 @@ class Bowtie2CommandLine(_Bowtie2BaseCommandLine):
         _Bowtie2BaseCommandLine.__init__(self, cmd, **kwargs)
 
     def _validate(self):
-        incompatibles = {}
+        incompatibles = [["local", "end_to_end"],
+                         ["k", "a"],
+                         ["al", "al_gz", "al_bz2", "al_lz4"],
+                         ["un", "un_gz", "un_bz2", "un_lz4"],
+                         ["un_conc", "un_conc_gz", "un_conc_bz2", "un_conc_lz4"],
+                         ["al_conc", "al_conc_gz", "al_conc_bz2", "al_lz4"]]
         self._validate_incompatibilities(incompatibles)
         # TODO add incompatibilites
-        # if self.entrez_query and not self.remote:
-        #     raise ValueError("Option entrez_query requires remote option.")
+        if self.bt2:
+            if (not self.m1 and not self.m2) and not self.U:
+                raise ValueError("Option bowtie2 requires input fastq.")
         _Bowtie2BaseCommandLine._validate(self)
 
 
@@ -682,7 +700,7 @@ class _Bowtie2SeqBaseCommandLine(_Bowtie2BaseCommandLine):
 
     def __init__(self, cmd=None, **kwargs):
         assert cmd is not None
-        self.parameters = [
+        self.parameters += [
             _Argument(["bt2"],
                       "bt2 filename minus trailing .1.bt2/.2.bt2. bt2 data to files with this dir/basename")
         ]
@@ -701,7 +719,7 @@ class _Bowtie2SeqBaseCommandLine(_Bowtie2BaseCommandLine):
         _Bowtie2BaseCommandLine.__init__(self, cmd, **kwargs)
 
     def _validate(self):
-            incompatibles = {}
+            incompatibles = []
             self._validate_incompatibilities(incompatibles)
             _Bowtie2BaseCommandLine._validate(self)
 
@@ -712,7 +730,7 @@ class Bowtie2BuildCommandLine(_Bowtie2SeqBaseCommandLine):
     def __init__(self, cmd='bowtie2-build', **kwargs):
         assert cmd is not None
         self.parameters = [
-            _Argument(["reference_in"],
+            _Argument(["reference"],
                       "comma-separated list of files with ref sequences")
         ]
         extra_parameters = [
@@ -830,5 +848,6 @@ class Bowtie2InspectCommandLine(_Bowtie2SeqBaseCommandLine):
 
 
 if __name__ == '__main__':
-    # print Bowtie2CommandLine("/usr/local/bin/bowtie2", num_mismatches="1")
-    print Bowtie2InspectCommandLine(bt2="test")
+    print Bowtie2CommandLine(version=True)()
+    # print Bowtie2InspectCommandLine(bt2="test")
+    pass
