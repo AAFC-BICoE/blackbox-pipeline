@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 from accessoryFunctions import *
 from bowtie import *
-from Bio.Sequencing.Applications import SamtoolsViewCommandline
+from Bio.Sequencing.Applications import SamtoolsViewCommandline, SamtoolsSortCommandline
+from cStringIO import StringIO
 __author__ = 'mike knowles'
 
 
@@ -26,25 +27,47 @@ class QualiMap(object):
                 sagen.bowtie2results = os.path.join(sagen.QualimapResults, sample.name)
                 sample.commands.Bowtie2Build = Bowtie2BuildCommandLine(reference=sagen.bestassemblyfile,
                                                                        bt2=sagen.bowtie2results)
+                sbam = os.path.join(sample.general.QualimapResults, sample.name, ".sorted.bam")
+                sample.commands.SAMtools = "samtools view -bS - | samtools sort -o {} -".format(sbam)
                 if len(sagen.fastqfiles) == 2:
                     indict = dict(("m"+str(x+1), sagen.fastqfiles[x]) for x in range(2))
                 else:
                     indict = dict(("U", ",".join(sagen.fastqfiles)))
                 sample.commands.Bowtie2Align = Bowtie2CommandLine(bt2=sagen.bowtie2results, **indict)
-                self.bowqueue.put((sample.commands.Bowtie2Build, sample.commands.Bowtie2Align))
+                self.bowqueue.put((sample, sample.commands.Bowtie2Align))
             else:
                 sample.commands.Quast = "NA"
         self.bowqueue.join()
 
     def align(self):
         while True:
-            sample = self.bowqueue.get()
+            sample, sbam = self.bowqueue.get()
+            stdout = StringIO()
             for func in sample.commands.Bowtie2Build, sample.commands.Bowtie2Align:
-                stdout, stderr = func()
+                stdout.close()
+                # Use cStringIO streams to handle bowtie output
+                stdout, stderr = map(StringIO, func())
                 if stderr:
                     # Write the standard error to log, bowtie2 puts alignmentsummary here
                     with open(os.path.join(sample.general.QualimapResults, "bowtie.log"), "ab+") as log:
-                        log.write("{}\n{}\n{}".format(func, stderr, '-'*60))
+                        log.write("{}\n{}\n{}".format(func, stderr.getvalue(), '-'*60))
+                stderr.close()
+            # stdout will be the SAM file from alignment
+            if stdout:
+                # PIPE stdout to stdin of samtools view then sort (only outputing sorted bam)
+                # SAMtools sort v1.3 has different run parameters
+                if self.samversion < "1.3":
+                    samsort = SamtoolsSortCommandline(input_bam="-", out_prefix=sbam[:-4])
+                else:
+                    samsort = SamtoolsSortCommandline(input_bam=sbam, o=True, out_prefix="-")
+                # Use cStringIO streams to handle bowtie output
+                for func in [SamtoolsViewCommandline(b=True, S=True, input_file="-"), samsort]:
+                    stdout, stderr = map(StringIO, func(stdin=stdout.getvalue()))
+                    stdout.close()
+                    # Write the standard error to log
+                    with open(os.path.join(sample.general.QualimapResults, "samtools.log"), "ab+") as log:
+                        log.write("{}\n{}\n{}".format(func, stderr.getvalue, '-'*60))
+                    stderr.close()
             # Signal to the queue that the job is done
             self.bowqueue.task_done()
 
@@ -66,6 +89,7 @@ class QualiMap(object):
     def __init__(self, inputobject):
         from Queue import Queue
         self.bowversion = Bowtie2CommandLine(version=True)()[0].split('\n')[0].split()[-1]
+        self.samversion = get_version(['samtools', '--version']).split('\n')[0].split()[1]
         self.metadata = inputobject.runmetadata.samples
         self.start = inputobject.starttime
         self.threads = inputobject.cpus

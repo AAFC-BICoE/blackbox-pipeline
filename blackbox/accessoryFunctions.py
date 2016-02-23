@@ -24,6 +24,7 @@ def get_version(exe):
     """
     :param exe: :type list required
     """
+    assert isinstance(exe, list)
     return Popen(exe, stderr=STDOUT, stdout=PIPE).stdout.read()
 
 def make_dict():
