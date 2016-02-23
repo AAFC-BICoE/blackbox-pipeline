@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from accessoryFunctions import *
 from bowtie import *
+from Bio.Sequencing.Applications import SamtoolsViewCommandline
 __author__ = 'mike knowles'
 
 
@@ -17,11 +18,12 @@ class QualiMap(object):
             threads.start()
         for sample in self.metadata:
             # Initialise the bowtie command and version
-            sample.software.Bowtie2 = self.version
+            sample.software.Bowtie2 = self.bowversion
             sagen = sample.general
             if sagen.bestassemblyfile:
-                sagen.qualimapresults = '{}/qualimap_results'.format(sagen.outputdirectory)
-                sagen.bowtie2results = os.path.join(sagen.qualimapresults, sample.name)
+                sagen.QualimapResults = '{}/qualimap_results'.format(sagen.outputdirectory)
+                make_path(sagen.QualimapResults)
+                sagen.bowtie2results = os.path.join(sagen.QualimapResults, sample.name)
                 sample.commands.Bowtie2Build = Bowtie2BuildCommandLine(reference=sagen.bestassemblyfile,
                                                                        bt2=sagen.bowtie2results)
                 if len(sagen.fastqfiles) == 2:
@@ -29,24 +31,28 @@ class QualiMap(object):
                 else:
                     indict = dict(("U", ",".join(sagen.fastqfiles)))
                 sample.commands.Bowtie2Align = Bowtie2CommandLine(bt2=sagen.bowtie2results, **indict)
-                self.qqueue.put((sample.commands.Bowtie2Build, sample.commands.Bowtie2Align))
+                self.bowqueue.put((sample.commands.Bowtie2Build, sample.commands.Bowtie2Align))
             else:
                 sample.commands.Quast = "NA"
-        self.qqueue.join()
+        self.bowqueue.join()
 
     def align(self):
         while True:
-            index, bwa = self.qqueue
-            index()
-            bwa()
+            sample = self.bowqueue.get()
+            for func in sample.commands.Bowtie2Build, sample.commands.Bowtie2Align:
+                stdout, stderr = func()
+                if stderr:
+                    # Write the standard error to log, bowtie2 puts alignmentsummary here
+                    with open(os.path.join(sample.general.QualimapResults, "bowtie.log"), "ab+") as log:
+                        log.write("{}\n{}\n{}".format(func, stderr, '-'*60))
             # Signal to the queue that the job is done
-            self.qqueue.task_done()
+            self.bowqueue.task_done()
 
 
     def build(self):
         """Run the quast command in a multi-threaded fashion"""
         while True:
-            sample = self.qqueue.get()
+            sample = self.bowqueue.get()
             if sample.general.bestassemblyfile != 'NA' \
                     and not os.path.isfile('{}/report.tsv'.format(sample.general.quastresults)):
                 log = os.path.join(sample.general.quastresults, 'stdout.log')
@@ -55,7 +61,7 @@ class QualiMap(object):
             if os.path.isfile('{}/report.tsv'.format(sample.general.quastresults)):
                 self.metaparse(sample)
             # Signal to the queue that the job is done
-            self.qqueue.task_done()
+            self.bowqueue.task_done()
 
     def __init__(self, inputobject):
         from Queue import Queue
@@ -64,8 +70,8 @@ class QualiMap(object):
         self.start = inputobject.starttime
         self.threads = inputobject.cpus
         self.path = inputobject.path
-        self.qqueue = Queue()
-        printtime('Aligning reads with Bowtie2 {} for qualimap'.format(self.version.split(",")[0]), self.start)
+        self.bowqueue = Queue()
+        printtime('Aligning reads with Bowtie2 {} for qualimap'.format(self.bowversion.split(",")[0]), self.start)
 
 
 if __name__ == '__main__':
