@@ -18,9 +18,11 @@ class MetadataReader(object):
                 # Set the name
                 metadata.name = sample.name
                 # Initialise the metadata categories as GenObjects created using the appropriate key
-                metadata.run = GenObject(jsondata['run'])
-                metadata.general = GenObject(jsondata['general'])
-                metadata.commands = GenObject(jsondata['commands'])
+                for attr in jsondata:
+                    setattr(metadata, attr, GenObject(jsondata[attr]))
+                # metadata.run = GenObject(jsondata['run'])
+                # metadata.general = GenObject(jsondata['general'])
+                # metadata.commands = GenObject(jsondata['commands'])
                 self.samples.append(metadata)
 
     def __init__(self, inputobject):

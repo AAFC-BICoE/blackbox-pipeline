@@ -175,6 +175,10 @@ class GenObject(object):
         else:
             self.datastore[key] = "NA"
 
+    def __iter__(self):
+        for key in self.datastore:
+            yield (key, getattr(self, key))
+
 
 class MetadataObject(object):
     """Object to store static variables"""
@@ -183,8 +187,9 @@ class MetadataObject(object):
         super(MetadataObject, self).__setattr__('datastore', {})
 
     def __getattr__(self, key):
-        """:key is retrieved from datastore if exists, for nested attr recursively :self.__setattr__"""
-        if key not in self.datastore:
+        """:key is retrieved from datastore if exists, for nested attr recursively :self.__setattr__
+        May need some improvement not include builtin methods"""
+        if key not in self.datastore and key != "keys":
             self.__setattr__(key)
         return self.datastore[key]
 
@@ -195,14 +200,12 @@ class MetadataObject(object):
         else:
             self.datastore[key] = value
 
-    def dump(self):
+    def __iter__(self):
         """Prints only the nested dictionary values; removes __methods__ and __members__ attributes"""
-        metadata = {}
         for attr in self.datastore:
-            metadata[attr] = {}
             if not attr.startswith('__'):
-                if isinstance(self.datastore[attr], str):
-                    metadata[attr] = self.datastore[attr]
+                value = getattr(self, attr)
+                if isinstance(value, str):
+                    yield (attr, value)
                 else:
-                    metadata[attr] = self.datastore[attr].datastore
-        return metadata
+                    yield (attr, getattr(value, 'datastore'))

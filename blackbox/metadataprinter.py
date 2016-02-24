@@ -18,7 +18,7 @@ class MetadataPrinter(object):
                 # Open the metadata file to write
                 with open(jsonfile, 'wb') as metadatafile:
                     # Write the json dump of the object dump to the metadata file
-                    json.dump(sample.dump(), metadatafile, sort_keys=True, indent=4, separators=(',', ': '))
+                    json.dump(dict(sample), metadatafile, sort_keys=True, indent=4, separators=(',', ': '))
 
 
     def __init__(self, inputobject):
