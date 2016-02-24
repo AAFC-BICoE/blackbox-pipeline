@@ -125,7 +125,8 @@ class QualiMap(object):
                         if (key,value):
                             qdict[key] = value
             if qdict:
-                sample.assembly.update(qdict)
+                # Make new category for Qualimap results
+                sample.mapping = GenObject(qdict)
 
             self.qqueue.task_done()
 

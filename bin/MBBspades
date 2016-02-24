@@ -117,6 +117,8 @@ class RunSpades(object):
         quastParser.Quast(self)
         # RUN BUSCO
         BuscoParser.Busco(self)
+        # Run Bowtie2, SAMtools, and Qualimap
+        qualimapR.QualiMap(self)()
         # Print the metadata to file
         metadataprinter.MetadataPrinter(self)
         #
