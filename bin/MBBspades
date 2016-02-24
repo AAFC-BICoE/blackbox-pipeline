@@ -26,9 +26,10 @@ class RunSpades(object):
             self.runmetadata.parseruninfo()
             # Populate the lack of bclcall and nohup call into the metadata sheet
             for sample in self.runmetadata.samples:
-                sample.commands = accessoryFunctions.GenObject()
-                sample.commands.nohupcall = 'NA'
-                sample.commands.bclcall = 'NA'
+                setattr(sample, "commands", accessoryFunctions.GenObject({'nohupcall': 'NA', 'bclcall': 'NA'}))
+                # sample.commands = accessoryFunctions.GenObject()
+                # sample.commands.nohupcall = 'NA'
+                # sample.commands.bclcall = 'NA'
             # Run the offhours fastq linking script - if argument
             if self.offhours:
                 offhoursobj = offhours.Offhours(self)

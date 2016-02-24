@@ -9,7 +9,7 @@ class MetadataReader(object):
         import json
         from accessoryFunctions import GenObject, MetadataObject
         for sample in self.metadata:
-            metadatafile = '{}{}/{}_metadata.json'.format(self.path, sample.name, sample.name)
+            metadatafile = os.path.join(self.path, sample.name, sample.name + "_metadata.json")
             if os.path.isfile(metadatafile):
                 with open(metadatafile) as metadatareport:
                     jsondata = json.load(metadatareport)
@@ -19,7 +19,10 @@ class MetadataReader(object):
                 metadata.name = sample.name
                 # Initialise the metadata categories as GenObjects created using the appropriate key
                 for attr in jsondata:
-                    setattr(metadata, attr, GenObject(jsondata[attr]))
+                    if not isinstance(jsondata[attr], dict):
+                        setattr(metadata, attr, jsondata[attr])
+                    else:
+                        setattr(metadata, attr, GenObject(jsondata[attr]))
                 # metadata.run = GenObject(jsondata['run'])
                 # metadata.general = GenObject(jsondata['general'])
                 # metadata.commands = GenObject(jsondata['commands'])

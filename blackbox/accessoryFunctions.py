@@ -25,7 +25,7 @@ def get_version(exe):
     :param exe: :type list required
     """
     assert isinstance(exe, list)
-    return Popen(exe, stderr=STDOUT, stdout=PIPE).stdout.read()
+    return Popen(exe, stdout=PIPE, stderr=STDOUT).stdout.read()
 
 def make_dict():
     """Makes Perl-style dictionaries"""
@@ -205,7 +205,17 @@ class MetadataObject(object):
         for attr in self.datastore:
             if not attr.startswith('__'):
                 value = getattr(self, attr)
-                if isinstance(value, str):
+                if isinstance(value, (basestring, int, float, bool, long)):
                     yield (attr, value)
+                elif not isinstance(value, (MetadataObject, GenObject, type)):
+                    if any(isinstance(x, (MetadataObject, GenObject, type)) for x in value):
+                        yield (attr, [getattr(v, 'datastore') for v in value])
+                    elif isinstance(value, dict):
+                        if any(isinstance(value[x], (MetadataObject, GenObject, type)) for x in value):
+                            yield (attr, dict((v,  getattr(value[v], 'datastore')) for v in value))
+                        else:
+                            yield (attr, value)
+                    else:
+                        yield (attr, value)
                 else:
                     yield (attr, getattr(value, 'datastore'))
