@@ -177,7 +177,11 @@ class GenObject(object):
 
     def __iter__(self):
         for key in self.datastore:
-            yield (key, getattr(self, key))
+            value = getattr(self, key)
+            if isinstance(value, (list, dict, tuple)):
+                yield (key, getattr(self, key))
+            else:
+                yield (key, str(getattr(self, key)))
 
 
 class MetadataObject(object):
@@ -190,10 +194,10 @@ class MetadataObject(object):
         """:key is retrieved from datastore if exists, for nested attr recursively :self.__setattr__
         May need some improvement not include builtin methods"""
         if key not in self.datastore and key != "keys":
-            self.__setattr__(key)
+            self.__setattr__(key, value=GenObject())
         return self.datastore[key]
 
-    def __setattr__(self, key, value=GenObject(), **args):
+    def __setattr__(self, key, value, **args):
         """Add :value to :key in datastore or create GenObject for nested attr"""
         if args:
             self.datastore[key].value = args
@@ -209,13 +213,20 @@ class MetadataObject(object):
                     yield (attr, value)
                 elif not isinstance(value, (MetadataObject, GenObject, type)):
                     if any(isinstance(x, (MetadataObject, GenObject, type)) for x in value):
-                        yield (attr, [getattr(v, 'datastore') for v in value])
+                        yield (attr, [dict(v) for v in value])
                     elif isinstance(value, dict):
                         if any(isinstance(value[x], (MetadataObject, GenObject, type)) for x in value):
-                            yield (attr, dict((v,  getattr(value[v], 'datastore')) for v in value))
+                            yield (attr, dict((v,  dict(value[v])) for v in value))
                         else:
                             yield (attr, value)
                     else:
                         yield (attr, value)
                 else:
-                    yield (attr, getattr(value, 'datastore'))
+                    try:
+                        yield (attr, dict(value))
+                    except TypeError:
+                        print attr, value,
+
+
+def logstr(*args):
+    yield "{}\n".__add__("-".__mul__(60)).__mul__(len(args)).format(*args)

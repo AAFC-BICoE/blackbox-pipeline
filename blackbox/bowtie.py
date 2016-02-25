@@ -6,6 +6,22 @@ __author__ = 'mike knowles'
 __doc__ = 'Wrapper for bowtie2'
 
 
+class _PipeArgumentList(_Argument):
+    """Represent a variable list of arguments for piping on a command line, e.g. sam to bam to sorted bam."""
+    def __str__(self):
+        assert isinstance(self.value, list), \
+                "Arguments should be a list"
+        assert self.value, "Requires at least one argument"
+        # A leading pipe is required so that commands following the last filename
+        # do not appear merged.
+        # e.g.:  samtools view -bS - | samtools sort -o out.sorted.bam -  [without leading pipe][Incorrect]
+        #        | samtools view -bS - | samtools sort -o out.sorted.bam -  [with leading pipe][Correct]
+        if any(not isinstance(x, basestring) for x in self.value):
+            # Correct for non-string commands.
+            # e.g. command classes like Bio.Sequencing.Applications.SamtoolsViewCommandLine
+            self.value = map(str, self.value)
+        return "| " + " | ".join(self.value)
+
 class _Bowtie2BaseCommandLine(AbstractCommandline):
     """Base bowtie wrapper"""
 
@@ -671,13 +687,19 @@ class Bowtie2CommandLine(_Bowtie2BaseCommandLine):
                     "index (i.e. you pay the memory overhead just once). This facilitates memory-efficient "
                     "parallelization of bowtie in situations where using -p is not possible or not preferable"),
         ]
+        pipe_parameters = [
+            _PipeArgumentList(["samcmds", "samtools"],
+                              "Allow user to pipe bowtie2 output to samtools for bam output")
+
+        ]
         try:
             # Insert extra parameters - at the start just in case there
             # are any arguments which must come last:
-            self.parameters = extra_parameters + self.parameters
+            # add pipe parameters to the end
+            self.parameters = extra_parameters + self.parameters + pipe_parameters
         except AttributeError:
             # Should we raise an error?  The subclass should have set this up!
-            self.parameters = extra_parameters
+            self.parameters = extra_parameters + pipe_parameters
         _Bowtie2BaseCommandLine.__init__(self, cmd, **kwargs)
 
     def _validate(self):
@@ -848,6 +870,11 @@ class Bowtie2InspectCommandLine(_Bowtie2SeqBaseCommandLine):
 
 
 if __name__ == '__main__':
-    print Bowtie2CommandLine(version=True)()
+    from Bio.Sequencing.Applications import SamtoolsViewCommandline, SamtoolsSortCommandline
+    ubam = "/data/2015-SEQ-1283/qualimap_results/2015-SEQ-1283.sorted.bam"
+    samsortt = SamtoolsSortCommandline(input_bam="-", out_prefix=ubam[:-4])
+    samtoolss = [SamtoolsViewCommandline(b=True, S=True, input_file="-"), samsortt]
+    # print samtools
+    print Bowtie2CommandLine(bt2="test", m1="none", m2="yes", samtools=samtoolss)
     # print Bowtie2InspectCommandLine(bt2="test")
     pass
