@@ -53,10 +53,10 @@ class QualiMap(object):
                 else:
                     samsort = SamtoolsSortCommandline(input_bam=sample.mapping.BamFile, o=True, out_prefix="-")
                 samtools = [SamtoolsViewCommandline(b=True, S=True, input_file="-"), samsort]
-                if len(sagen.fastqfiles) == 2:
-                    indict = dict(("m" + str(x + 1), sagen.fastqfiles[x]) for x in range(2))
+                if len(sagen.trimmedfastqfiles) == 2:
+                    indict = dict(("m" + str(x + 1), sagen.trimmedfastqfiles[x]) for x in range(2))
                 else:
-                    indict = dict(("U", ",".join(sagen.fastqfiles)))
+                    indict = dict(("U", ",".join(sagen.trimmedfastqfiles)))
                 sample.commands.Bowtie2Align = Bowtie2CommandLine(bt2=sagen.bowtie2results,
                                                                   threads=self.threads,
                                                                   samtools=samtools,
