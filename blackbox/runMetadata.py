@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from accessoryFunctions import MetadataObject, GenObject
 import os
+
 # Import ElementTree - try first to import the faster C version, if that doesn't
 # work, try to import the regular version
 try:
@@ -12,7 +13,6 @@ __author__ = 'adamkoziol,mikeknowles'
 
 
 class Metadata(object):
-
     def parseruninfo(self):
         """Extracts the flowcell ID, as well as the instrument name from RunInfo.xml. If this file is not provided,
         NA values are substituted"""
@@ -40,75 +40,53 @@ class Metadata(object):
     def parsesamplesheet(self):
         """Parses the sample sheet (SampleSheet.csv) to determine certain values
         important for the creation of the assembly report"""
-        import copy
-        # Initialise variables
-        reads = []
         # Open the sample sheet
         with open(self.samplesheet, "rb") as samplesheet:
             # Iterate through the sample sheet
-            for line in samplesheet:
+            samples, prev, header = False, 0, []
+            for count, line in enumerate(samplesheet):
                 # Remove new lines, and split on commas
                 data = line.rstrip().split(",")
-                # Pull out the desired information from the sample sheet
-                if "Investigator" in line:
-                    self.header.investigator = data[1]
-                if "Experiment" in line:
-                    self.header.experiment = data[1].replace("  ", " ")
-                if "Date" in line:
-                    self.header.date = data[1]
-                    self.date = data[1]
-                # Iterate through the file until [Reads] is encountered, then go until [Settings]
-                if "Reads" in line:
-                    for subline in samplesheet:
-                        # Stop reading once "Settings" is encountered
-                        if "Settings" in subline:
-                            break
-                        # Append the forward and reverse reads to the list
-                        reads.append(subline.rstrip().split(",")[0])
-                    # Extract the read lengths from the list of reads
-                    self.header.forwardlength = int(reads[0])
-                    self.header.reverselength = int(reads[1])
-                    self.totalreads = int(reads[0]) + int(reads[1]) + 16
-                if "Adapter" in line:
-                    self.header.adapter = data[1]
-                if "Sample_ID" in line:
-                    # Initialise the count to store the SampleNumber
-                    count = 1
-                    for subline in samplesheet:
-                        subdata = [x.rstrip() for x in subline.rstrip().split(",")]
-                        # Capture Sample_ID, Sample_Name, I7_Index_ID, index1, I5_Index_ID,	index2, Sample_Project
+                if any(data):
+                    if "[Settings]" in line:
+                        samples = False
+                    if not line.startswith("[") and not samples and not data == ['']:
+                        # Grab an data not in the [Data] Section
+                        setattr(self.header, data[0], "".join(data[1:]))
+                    elif "[Data]" in line or "[Reads]" in line:
+                        samples = True
+                    elif samples and "Sample_ID" in line:
+                        header.extend([x.replace("_", "").replace(' ', "") for x in data])
+                        prev = count
+                    elif header:
                         # Try and replicate the Illumina rules to create file names from "Sample_Name"
-                        samplename = samplenamer(subdata)
+                        samplename = samplenamer(data)
                         # Create an object for storing nested static variables
                         strainmetadata = MetadataObject()
                         # Set the sample name in the object
                         strainmetadata.name = samplename
                         # Add the header object to strainmetadata
-                        strainmetadata.run = GenObject(copy.copy(self.header.datastore))
+                        strainmetadata.__setattr__("run", GenObject(dict(self.header)))
                         # Create the run object, so it will be easier to populate the object (eg run.SampleName = ...
                         # instead of strainmetadata.run.SampleName = ...
                         run = strainmetadata.run
-                        run.SampleName = subdata[0]
-                        # Comprehension to populate the run object from a stretch of subdata
-                        run.I7IndexID, run.index1, run.I5IndexID, run.index2, run.Project, run.Description \
-                            = subdata[4:10]
+                        # Capture Sample_ID, Sample_Name, I7_Index_ID, index1, I5_Index_ID,	index2, Sample_Project
+                        for idx, item in enumerate(data):
+                            setattr(run, header[idx], item) if item else setattr(run, header[idx], "NA")
                         # Add the sample number
-                        run.SampleNumber = count
-                        # Increment the count
-                        count += 1
+                        run.SampleNumber = count - prev
                         # Create the 'General' category for strainmetadata
-                        strainmetadata.general = GenObject()
+                        strainmetadata.general = GenObject({'outputdirectory': os.path.join(self.path, samplename),
+                                                            'pipelinecommit' : self.commit})
                         # Add the output directory to the general category
-                        strainmetadata.general.outputdirectory = self.path + samplename
-                        strainmetadata.general.pipelinecommit = self.commit
                         # Append the strainmetadata object to a list
                         self.samples.append(strainmetadata)
-        # Grab metadata from previous runs
-        # metadata = metadataReader.MetadataReader(self)
-        # Update self.samples
-        # self.samples = metadata.samples
-        # import json
-        # print json.dumps([x.dump() for x in self.samples], sort_keys=True, indent=4, separators=(',', ': '))
+                    elif samples:
+                        setattr(self.header, 'forwardlength', data[0]) \
+                            if 'forwardlength' not in dict(self.header) else \
+                            setattr(self.header, 'reverselength', data[0])
+                        self.totalreads += int(data[0])
+        self.date = self.header.Date if "Date" in dict(self.header) else self.date
 
     def parserunstats(self):
         """Parses the XML run statistics file (GenerateFASTQRunStatistics.xml). In some cases, the file is not
@@ -210,7 +188,7 @@ class Metadata(object):
         self.samples = []
         self.ids = []
         self.date = ""
-        self.totalreads = 0
+        self.totalreads = 16
         self.runid = ""
         self.runnumber = ""
         self.commit = passed.commit
@@ -220,19 +198,30 @@ class Metadata(object):
         # If a custom sample sheet has been provided, use it
         if passed.customsamplesheet:
             self.samplesheet = passed.customsamplesheet
-            assert os.path.isfile(self.samplesheet), u'Could not find CustomSampleSheet as entered: {0!r:s}'\
+            assert os.path.isfile(self.samplesheet), u'Could not find CustomSampleSheet as entered: {0!r:s}' \
                 .format(self.samplesheet)
         else:
             self.samplesheet = "{}SampleSheet.csv".format(self.path)
         # Extract data from SampleSheet.csv
         self.parsesamplesheet()
 
+    def __iter__(self):
+        for sample in self.samples:
+            yield dict(sample)
 
-def samplenamer(listofdata, indexposition=0):
+
+def samplenamer(data, idx=0):
     """Tries to replicate the Illumina rules to create file names from 'Sample_Name'
     :param listofdata: a list of data extracted from a file
     :param indexposition:
     """
-    samplename = listofdata[indexposition].rstrip().replace(" ", "-").replace(".", "-").replace("=", "-")\
-        .replace("+", "").replace("/", "-").replace("#", "").replace("---", "-").replace("--", "-")
-    return samplename
+    repls = (" ", "-"), (".", "-"), ("=", "-"), ("+", ""), ("/", "-"), ("#", ""), ("---", "-"), ("--", "-")
+    return reduce(lambda a, kv: a.replace(*kv), repls, data[idx])
+    # samplename = listofdata[indexposition].rstrip().replace(" ", "-").replace(".", "-").replace("=", "-")\
+    #     .replace("+", "").replace("/", "-").replace("#", "").replace("---", "-").replace("--", "-")
+    # return samplename
+
+
+if __name__ == '__main__':
+    passed = GenObject({'path': '/Users/mike/tes/', 'runinfo': "NA", 'commit': 'NA', 'customsamplesheet': None})
+    metadata = Metadata(passed)
