@@ -21,19 +21,6 @@ class CreateFastq(object):
         make_path(self.fastqdestination)
         # bcl2fastq requires an older version of the sample sheet, this recreates the required version
         # Create the new sample sheet
-        with open('{}/SampleSheet_modified.csv'.format(self.fastqdestination), "wb") as modifiedsamplesheet:
-            # Write the required headings to the file
-            modifiedsamplesheet.write(
-                "FCID,Lane,SampleID,SampleRef,Index,Description,Control,Recipe,Operator,SampleProject\n")
-            for strain in self.samples:
-                # Create a combined index of index1-index2
-                modifiedindex = '{}-{}'.format(strain.run.index1, strain.run.index2)
-                # The list of items to print to each line of the modified sample sheet
-                printlist = [self.flowcell, '1', strain.name, str(strain.run.SampleNumber), modifiedindex,
-                             strain.run.Description, 'N', 'NA',
-                             strain.run.investigator, self.projectname]
-                modifiedsamplesheet.write('{}\n'.format(",".join(printlist)))
-                samplecount += 1
         # Set :forward/reverse length to :header.forward/reverse length if the argument is not provided, or it's 'full',
         # otherwise  use the supplied argument
         self.forwardlength = self.metadata.header.forwardlength if self.forwardlength.lower()\
@@ -41,13 +28,37 @@ class CreateFastq(object):
         # Set :reverselength to :header.reverselength
         self.reverselength = self.metadata.header.reverselength if self.reverselength.lower() \
             == 'full' else self.reverselength
+        nohup, basemak = "", ""
+        with open('{}/SampleSheet_modified.csv'.format(self.fastqdestination), "wb") as modifiedsamplesheet:
+            # Write the required headings to the file
+            modifiedsamplesheet.write(
+                "FCID,Lane,SampleID,SampleRef,Index,Description,Control,Recipe,Operator,SampleProject\n")
+            for strain in self.samples:
+                # Create a combined index of index1-index2
+                if "index1" in dict(strain.run):
+                    modifiedindex = '{}-{}'.format(strain.run.index1, strain.run.index2)
+                elif "index1" in dict(strain.run):
+                    modifiedindex = '{}-{}'.format(strain.run.index, strain.run.index2)
+                else:
+                    modifiedindex = strain.run.index
+                # The list of items to print to each line of the modified sample sheet
+                printlist = [self.flowcell, '1', strain.name, str(strain.run.SampleNumber), modifiedindex,
+                             strain.run.Description, 'N', 'NA',
+                             strain.run.InvestigatorName, self.projectname]
+                modifiedsamplesheet.write('{}\n'.format(",".join(printlist)))
+                samplecount += 1
+                if "Mate Pair" in strain.run.Assay and not self.readsneeded:
+                    basemask = "Y{}n*,I{},Y{}n*".format(self.forwardlength, len(strain.run.index), self.reverselength)
+                    nohup = "nohup make -j 16"
+                    self.readsneeded = int(self.forwardlength) + int(self.reverselength) + 6
+
         # As the number of cycles required is the number of forward reads + the index(8) + the second index(8)
         # Also set the basemask variable as required
-        if self.reverselength != '0':
+        if self.reverselength != '0' and not self.readsneeded:
             self.readsneeded = int(self.forwardlength) + int(self.reverselength) + 16
             basemask = "Y{}n*,I8,I8,Y{}n*".format(self.forwardlength, self.reverselength)
             nohup = "nohup make -j 16"
-        else:
+        elif not self.readsneeded:
             self.readsneeded = int(self.forwardlength) + 16
             basemask = "Y{}n*,I8,I8,n*".format(self.forwardlength)
             nohup = "nohup make -j 16 r1"
@@ -80,8 +91,8 @@ class CreateFastq(object):
             # Call configureBclToFastq.pl
             printtime('Running bcl2fastq', self.start)
             # Run the commands
-            execute(bclcall, "")
-            execute(nohupcall, '{}/nohup.out'.format(self.fastqdestination))
+            execute(bclcall, '{}/bcl.log'.format(self.fastqdestination), shell=True)
+            execute(nohupcall, '{}/nohup.log'.format(self.fastqdestination), shell=True)
         # Populate the metadata
         for sample in self.metadata.samples:
             sample.commands.nohupcall = nohupcall
@@ -206,7 +217,7 @@ class CreateFastq(object):
         self.readsneeded = 0
         self.commit = inputobject.commit
         try:
-            self.miseqpath = os.path.join(inputobject.args['m'], "")
+            self.miseqpath = os.path.join(inputobject.args.m, "")
         except AttributeError:
             print('MiSeqPath argument is required in order to use the fastq creation module. Please provide this '
                   'argument and run the script again.')

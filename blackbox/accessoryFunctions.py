@@ -60,7 +60,7 @@ def dotter():
         globalcount = 1
 
 
-def execute(command, outfile=""):
+def execute(command, outfile="", **kwargs):
     """
     Allows for dots to be printed to the terminal while waiting for a long system call to run
     :param command: the command to be executed
@@ -75,16 +75,16 @@ def execute(command, outfile=""):
     start = int(time.time())
     maxtime = 0
     # Removing Shell=True to prevent excess memory use thus shlex split if needed
-    if type(command) is not list:
+    if type(command) is not list and "shell" not in kwargs:
         import shlex
         command = shlex.split(command)
     # Run the commands - direct stdout to PIPE and stderr to stdout
     # DO NOT USE subprocess.PIPE if not writing it!
     if outfile:
-        process = Popen(command, stdout=PIPE, stderr=STDOUT)
+        process = Popen(command, stdout=PIPE, stderr=STDOUT, **kwargs)
     else:
         DEVNULL = open(os.devnull, 'wb')
-        process = Popen(command, stdout=DEVNULL, stderr=STDOUT)
+        process = Popen(command, stdout=DEVNULL, stderr=STDOUT, **kwargs)
     # Write the initial time
     sys.stdout.write('[{:}] '.format(time.strftime('%H:%M:%S')))
     # Create the output file - if not provided, then nothing should happen

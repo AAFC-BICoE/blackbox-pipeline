@@ -52,7 +52,7 @@ class Metadata(object):
                         samples = False
                     if not line.startswith("[") and not samples and not data == ['']:
                         # Grab an data not in the [Data] Section
-                        setattr(self.header, data[0], "".join(data[1:]))
+                        setattr(self.header, data[0].replace(" ", ""), "".join(data[1:]))
                     elif "[Data]" in line or "[Reads]" in line:
                         samples = True
                     elif samples and "Sample_ID" in line:
@@ -87,6 +87,7 @@ class Metadata(object):
                             setattr(self.header, 'reverselength', data[0])
                         self.totalreads += int(data[0])
         self.date = self.header.Date if "Date" in dict(self.header) else self.date
+        self.csv = header
 
     def parserunstats(self):
         """Parses the XML run statistics file (GenerateFASTQRunStatistics.xml). In some cases, the file is not

@@ -114,7 +114,7 @@ class Offhours(object):
         """Initialise variables"""
         import sys
         self.path = inputobject.path
-        self.miseqfolder = inputobject.args['f']
+        self.miseqfolder = inputobject.args.f
         self.miseqfoldername = ""
         self.customsamplesheet = inputobject.customsamplesheet
         self.start = inputobject.starttime
@@ -123,7 +123,7 @@ class Offhours(object):
         self.numreads = inputobject.numreads
         self.metadata = inputobject
         try:
-            self.miseqpath = os.path.join(inputobject.args['m'], "")
+            self.miseqpath = os.path.join(inputobject.args.m, "")
         except AttributeError:
             print('MiSeqPath argument is required in order to use the off-hours module. Please provide this argument '
                   'and run the script again.')
