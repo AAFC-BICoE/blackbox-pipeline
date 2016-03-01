@@ -50,7 +50,8 @@ setup(
     description='Assembly pipeline using Docker and SPAdes',
     long_description=open('README.md').read(),
     install_requires=['biopython >= 1.65',
-                      'argparse >= 1.4.0'],
+                      'argparse >= 1.4.0',
+                      'pyyaml'],
     scripts=['bin/MBBspades'],
     cmdclass=dict(install=RecordGit)
 )
