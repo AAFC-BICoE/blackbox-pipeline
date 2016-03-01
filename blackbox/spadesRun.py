@@ -38,34 +38,30 @@ class Spades(object):
             else:
                 fastqfiles = ''
             # Only proceed if fastq files exists
-            if fastqfiles:
+            if "yaml" in dict(sample.run):
+                # TODO: implement complex yaml input for spades
+                pass
+            elif fastqfiles:
                 # Set the the forward fastq files
                 forward = fastqfiles[0]
                 # Set the output directory
                 sample.general.spadesoutput = '{}/spades_output'.format(sample.general.outputdirectory)
+                spadescommand = '-k {} --careful -o {} -t {}'.format(sample.general.kmers, sample.general.spadesoutput,
+                                                                     self.threads)
+                # If a previous assembly was partially completed, continue from the most recent checkpoint
+                if os.path.isdir(sample.general.spadesoutput):
+                    spadescommand += ' --continue'
                 # If there are two fastq files
                 if len(fastqfiles) == 2:
-                    # Set the reverse fastq name
-                    reverse = fastqfiles[1]
-                    # If a previous assembly was partially completed, continue from the most recent checkpoint
-                    if os.path.isdir(sample.general.spadesoutput):
-                        spadescommand = '-k {} --careful --continue --pe1-1 {} --pe1-2 {} -o {} -t {}'\
-                                        .format(sample.general.kmers, forward, reverse, sample.general.spadesoutput,
-                                                self.threads)
+                    if 'Mate Pair' in sample.run.assay:
+                        spadescommand += '--mp1-1 {} --mp2-2 {}'.format(forward, fastqfiles[1])
                     else:
-                        spadescommand = '-k {} --careful --pe1-1 {} --pe1-2 {} -o {} -t {}'\
-                                        .format(sample.general.kmers, forward, reverse, sample.general.spadesoutput,
-                                                self.threads)
-                # Same as above, but use single read settings for spades
+                        spadescommand += '--pe1-1 {} --pe1-2 {}'.format(forward, fastqfiles[1])
                 else:
-                    if os.path.isdir(sample.general.spadesoutput):
-                        spadescommand = '-k {} --careful --continue --s1 {} -o {} -t {}'\
-                                        .format(sample.general.kmers, forward, sample.general.spadesoutput,
-                                                self.threads)
+                    if 'Mate Pair' in sample.run.assay:
+                        spadescommand += '--mp1-12 {} --mp2-2 {}'.format(forward, fastqfiles[1])
                     else:
-                        spadescommand = '-k {} --careful --s1 {} -o {} -t {}'\
-                                        .format(sample.general.kmers, forward, sample.general.spadesoutput,
-                                                self.threads)
+                        spadescommand += '--s1 {}'.format(forward)
                 # SPAdes 3.6.2 supports python 3.5
                 if self.version >= "3.6.2":
                     spadescommand = "python3 {} {}".format(spadespath, spadescommand)
@@ -182,4 +178,5 @@ class Spades(object):
         import spades_init
         spades_init.init()
         self.version = spades_init.spades_version.rstrip()
+        self.yaml = None
         self.spades()

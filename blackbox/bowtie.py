@@ -22,6 +22,7 @@ class _PipeArgumentList(_Argument):
             self.value = map(str, self.value)
         return "| " + " | ".join(self.value)
 
+
 class _Bowtie2BaseCommandLine(AbstractCommandline):
     """Base bowtie wrapper"""
 
