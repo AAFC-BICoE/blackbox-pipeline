@@ -139,7 +139,7 @@ class QualiMap(object):
                     with open(reportfile) as report:
                         for line in report:
                             key, value = self.analyze(line)
-                            if (key, value) != (None, None):
+                            if all((key, value)):
                                 qdict[key] = value
                 if qdict:
                     # Make new category for Qualimap results
