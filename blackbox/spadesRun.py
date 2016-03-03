@@ -53,12 +53,12 @@ class Spades(object):
                     spadescommand += ' --continue'
                 # If there are two fastq files
                 if len(fastqfiles) == 2:
-                    if 'Mate Pair' in sample.run.assay:
+                    if 'Mate Pair' in sample.run.Assay:
                         spadescommand += '--mp1-1 {} --mp2-2 {}'.format(forward, fastqfiles[1])
                     else:
                         spadescommand += '--pe1-1 {} --pe1-2 {}'.format(forward, fastqfiles[1])
                 else:
-                    if 'Mate Pair' in sample.run.assay:
+                    if 'Mate Pair' in sample.run.Assay:
                         spadescommand += '--mp1-12 {} --mp2-2 {}'.format(forward, fastqfiles[1])
                     else:
                         spadescommand += '--s1 {}'.format(forward)
@@ -82,6 +82,7 @@ class Spades(object):
         printtime('Filtering sequences', self.start)
         self.filter()
         self.insertsize()
+        self.parse()
 
     def assemble(self):
         """Run the assembly command in a multi-threaded fashion"""
@@ -165,6 +166,20 @@ class Spades(object):
             else:
                 sample.general.insertsize = 'NA'
                 sample.general.insertsizestandarddev = 'NA'
+
+    def parse(self):
+        import yaml
+        for sample in self.metadata:
+            yamlfile = os.path.join(sample.general.spadesoutput, 'corrected', 'corrected.yaml')
+            with open(yamlfile) as spades:
+                for seq in yaml.load(spades):
+                    for group in seq:
+                        main = lambda x: getattr(sample.general, x).extend(seq[group]) \
+                            if hasattr(sample.general, x) else setattr(sample.general, x, seq[group])
+                        if group.startswith('interlaced'):
+                            main('CorrectedSingleReads')
+                        elif group.endswith('reads'):
+                            main('Corrected' + group.title().replace(" ", ""))
 
     def __init__(self, inputobject):
         from Queue import Queue

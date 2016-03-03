@@ -225,7 +225,7 @@ class MetadataObject(object):
                     try:
                         yield (attr, dict(value))
                     except TypeError:
-                        print attr, value,
+                        print attr, value
 
 
 def logstr(*args):

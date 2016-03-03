@@ -120,6 +120,8 @@ class RunSpades(object):
         BuscoParser.Busco(self)
         # Run Bowtie2, SAMtools, and Qualimap
         qualimapR.QualiMap(self)()
+        # Run ITSx parallel
+        itsx.ITSx(self)
         # Print the metadata to file
         metadataprinter.MetadataPrinter(self)
         #

@@ -34,7 +34,9 @@ class QualiMap(object):
             threads.setDaemon(True)
             # Start the threading
             threads.start()
+        reads = (('CorrectedLeftReads', 'm1'), ('CorrectedRightReads', 'm2'), ('CorrectedSingleReads', 'U'))
         for sample in self.metadata:
+            main = lambda (x, y): (y, ",".join(getattr(sample.general, x))) if hasattr(sample.general, x) else None
             # Initialise the bowtie command and version
             sample.software.Bowtie2 = self.bowversion
             sample.software.SAMtools = self.samversion
@@ -53,10 +55,7 @@ class QualiMap(object):
                 else:
                     samsort = SamtoolsSortCommandline(input_bam=sample.mapping.BamFile, o=True, out_prefix="-")
                 samtools = [SamtoolsViewCommandline(b=True, S=True, input_file="-"), samsort]
-                if len(sagen.trimmedfastqfiles) == 2:
-                    indict = dict(("m" + str(x + 1), sagen.trimmedfastqfiles[x]) for x in range(2))
-                else:
-                    indict = dict(("U", ",".join(sagen.trimmedfastqfiles)))
+                indict = dict([(y, ",".join(getattr(sagen, x))) for x, y in reads if hasattr(sagen, x)])
                 sample.commands.Bowtie2Align = Bowtie2CommandLine(bt2=sagen.bowtie2results,
                                                                   threads=self.threads,
                                                                   samtools=samtools,
