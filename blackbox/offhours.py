@@ -2,11 +2,11 @@
 from accessoryFunctions import printtime
 from glob import glob
 import os
+
 __author__ = 'adamkoziol,mikeknowles'
 
 
 class Offhours(object):
-
     def assertpathsandfiles(self):
         """Assertions to make sure that arguments are at least mostly valid"""
         # Assertion to ensure that the MiSeq path exists
@@ -25,12 +25,12 @@ class Offhours(object):
             self.miseqfoldername = self.miseqfolder
             self.miseqfolder = self.miseqpath + self.miseqfolder + "/"
             # Assert to ensure that the folder exists
-            assert os.path.isdir(self.miseqfolder), u'MiSeqFolder is not a valid directory {0!r:s}'\
+            assert os.path.isdir(self.miseqfolder), u'MiSeqFolder is not a valid directory {0!r:s}' \
                 .format(self.miseqfolder)
         # Pull the data from the SampleSheet.csv
         if self.customsamplesheet:
             self.samplesheet = self.customsamplesheet
-            assert os.path.isfile(self.customsamplesheet), u'Could not find CustomSampleSheet as entered: {0!r:s}'\
+            assert os.path.isfile(self.customsamplesheet), u'Could not find CustomSampleSheet as entered: {0!r:s}' \
                 .format(self.customsamplesheet)
         # Otherwise use the SampleSheet.csv located in :self.miseqfolder
         else:
@@ -105,8 +105,8 @@ class Offhours(object):
             sample.general.fastqfiles = fastqfiles
         # Copy the GenerateFASTQRunStatistics.xml, RunInfo.xml, and SampleSheet.csv to self.path
         map(lambda x: shutil.copyfile('{}/{}'.format(self.miseqfolder, x), '{}{}'.format(self.path, x))
-            # Don't copy if the file is already present
-            if not os.path.isfile('{}{}'.format(self.path, x)) else x,
+        # Don't copy if the file is already present
+        if not os.path.isfile('{}{}'.format(self.path, x)) else x,
             # List of the files of interest
             ['GenerateFASTQRunStatistics.xml', 'RunInfo.xml', 'SampleSheet.csv'])
 
@@ -128,7 +128,7 @@ class Offhours(object):
             print('MiSeqPath argument is required in order to use the off-hours module. Please provide this argument '
                   'and run the script again.')
             sys.exit()
-        # # Assert that provided arguments are valid
-        # self.assertpathsandfiles()
-        # # Determine the number of samples to process by parsing the sample sheet
-        # self.numberofsamples()
+            # # Assert that provided arguments are valid
+            # self.assertpathsandfiles()
+            # # Determine the number of samples to process by parsing the sample sheet
+            # self.numberofsamples()

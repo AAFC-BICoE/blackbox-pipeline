@@ -3,7 +3,6 @@ __author__ = 'adamkoziol,mikeknowles'
 
 
 class FastqMover(object):
-
     def movefastq(self):
         """Find .fastq files for each sample and move them to an appropriately named folder"""
         from glob import glob

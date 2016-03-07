@@ -2,11 +2,11 @@
 import subprocess
 import os
 import metadataReader
+
 __author__ = 'adamkoziol,mikeknowles'
 
 
 class Basic(object):
-
     def basic(self):
         from accessoryFunctions import GenObject, MetadataObject, filer, make_path
         from glob import glob

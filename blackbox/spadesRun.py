@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 from accessoryFunctions import printtime, execute
 import os
+
 __author__ = 'adamkoziol,mikeknowles'
 
 
 class Spades(object):
-
     def spades(self):
         from threading import Thread
         import spades
@@ -34,7 +34,7 @@ class Spades(object):
             if type(sample.general.trimmedfastqfiles) is list:
                 fastqfiles = sorted(sample.general.trimmedfastqfiles)
             elif type(sample.general.fastqfiles) is list:
-                    fastqfiles = sorted(sample.general.fastqfiles)
+                fastqfiles = sorted(sample.general.fastqfiles)
             else:
                 fastqfiles = ''
             # Only proceed if fastq files exists

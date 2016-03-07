@@ -5,11 +5,11 @@ from offhours import Offhours
 from glob import glob
 import runMetadata
 from accessoryFunctions import make_path, printtime, execute
+
 __author__ = 'adamkoziol,mikeknowles'
 
 
 class CreateFastq(object):
-
     def createfastq(self):
         """Uses bcl2fastq to create .fastq files from a MiSeqRun"""
         from time import sleep
@@ -23,11 +23,11 @@ class CreateFastq(object):
         # Create the new sample sheet
         # Set :forward/reverse length to :header.forward/reverse length if the argument is not provided, or it's 'full',
         # otherwise  use the supplied argument
-        self.forwardlength = self.metadata.header.forwardlength if self.forwardlength.lower()\
-            == 'full' else self.forwardlength
+        self.forwardlength = self.metadata.header.forwardlength if self.forwardlength.lower() \
+                                                                   == 'full' else self.forwardlength
         # Set :reverselength to :header.reverselength
         self.reverselength = self.metadata.header.reverselength if self.reverselength.lower() \
-            == 'full' else self.reverselength
+                                                                   == 'full' else self.reverselength
         nohup, basemak = "", ""
         with open('{}/SampleSheet_modified.csv'.format(self.fastqdestination), "wb") as modifiedsamplesheet:
             # Write the required headings to the file
@@ -72,7 +72,8 @@ class CreateFastq(object):
         cycles = glob('{}Data/Intensities/BaseCalls/L001/C*'.format(self.miseqfolder))
         while len(cycles) < self.readsneeded:
             printtime('Currently at {} cycles. Waiting until the MiSeq reaches cycle {}'.format(len(cycles),
-                      self.readsneeded), self.start)
+                                                                                                self.readsneeded),
+                      self.start)
             sleep(30)
             cycles = glob('{}Data/Intensities/BaseCalls/L001/C*'.format(self.miseqfolder))
         # configureBClToFastq requires :self.miseqfolder//Data/Intensities/BaseCalls/config.xml in order to work
@@ -83,7 +84,7 @@ class CreateFastq(object):
         # Define the bcl2fastq system call
         bclcall = "configureBclToFastq.pl --input-dir {}Data/Intensities/BaseCalls " \
                   "--output-dir {} --force --sample-sheet {}/SampleSheet_modified.csv " \
-                  "--mismatches 1 --no-eamss --fastq-cluster-count 0 --compression none --use-bases-mask {}"\
+                  "--mismatches 1 --no-eamss --fastq-cluster-count 0 --compression none --use-bases-mask {}" \
             .format(self.miseqfolder, self.fastqdestination, self.fastqdestination, basemask)
         # Define the nohup system call
         nohupcall = "cd {} && {}".format(self.fastqdestination, nohup)
@@ -188,7 +189,7 @@ class CreateFastq(object):
                         make_path(outputdir)
                         os.symlink(fastq, '{}/{}'.format(outputdir, os.path.basename(sub('\w{8}-\w{8}',
                                                                                          'S{}'.format(
-                                                                                                 sample.run.SampleNumber
+                                                                                             sample.run.SampleNumber
                                                                                          ), fastq))))
                     # Except os errors
                     except OSError as exception:

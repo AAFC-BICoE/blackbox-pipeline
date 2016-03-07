@@ -2,6 +2,7 @@
 from subprocess import Popen, PIPE, STDOUT
 import os
 import errno
+
 __author__ = 'adamkoziol,mikeknowles'
 
 
@@ -20,12 +21,14 @@ def make_path(inpath):
         if exception.errno != errno.EEXIST:
             raise
 
+
 def get_version(exe):
     """
     :param exe: :type list required
     """
     assert isinstance(exe, list)
     return Popen(exe, stdout=PIPE, stderr=STDOUT).stdout.read()
+
 
 def make_dict():
     """Makes Perl-style dictionaries"""
@@ -40,6 +43,7 @@ def printtime(string, start):
     """
     import time
     print('\n\033[1m' + "[Elapsed Time: {:.2f} seconds] {}".format(time.time() - start, string) + '\033[0m')
+
 
 # Initialise globalcount
 globalcount = 0
@@ -56,7 +60,7 @@ def dotter():
         sys.stdout.write('.')
         globalcount += 1
     else:
-        sys.stdout.write('\n[%s] .' % (time.strftime("%H:%M:%S")))
+        sys.stdout.write('\n[{0:s}] .'.format(time.strftime("%H:%M:%S")))
         globalcount = 1
 
 
@@ -83,8 +87,8 @@ def execute(command, outfile="", **kwargs):
     if outfile:
         process = Popen(command, stdout=PIPE, stderr=STDOUT, **kwargs)
     else:
-        DEVNULL = open(os.devnull, 'wb')
-        process = Popen(command, stdout=DEVNULL, stderr=STDOUT, **kwargs)
+        devnull = open(os.devnull, 'wb')
+        process = Popen(command, stdout=devnull, stderr=STDOUT, **kwargs)
     # Write the initial time
     sys.stdout.write('[{:}] '.format(time.strftime('%H:%M:%S')))
     # Create the output file - if not provided, then nothing should happen
@@ -155,12 +159,12 @@ def filer(filelist, extension='fastq'):
 def relativesymlink(src_file, dest_file):
     ret = get_version(['ln', '-s', '-r', src_file, dest_file])
     if ret and 'File exists' not in ret:
-            raise Exception(ret)
-
+        raise Exception(ret)
 
 
 class GenObject(object):
     """Object to store static variables"""
+
     def __init__(self, x=None):
         start = x if x else {}
         # start = (lambda y: y if y else {})(x)
@@ -186,6 +190,7 @@ class GenObject(object):
 
 class MetadataObject(object):
     """Object to store static variables"""
+
     def __init__(self):
         """Create datastore attr with empty dict"""
         super(MetadataObject, self).__setattr__('datastore', {})
@@ -216,7 +221,7 @@ class MetadataObject(object):
                         yield (attr, [dict(v) for v in value])
                     elif isinstance(value, dict):
                         if any(isinstance(value[x], (MetadataObject, GenObject, type)) for x in value):
-                            yield (attr, dict((v,  dict(value[v])) for v in value))
+                            yield (attr, dict((v, dict(value[v])) for v in value))
                         else:
                             yield (attr, value)
                     else:
@@ -237,7 +242,9 @@ def which(cmd, mode=os.F_OK | os.X_OK, path=None):
     conforms to the given mode on the PATH, or None if there is no such
     file.
 
-    :param mode defaults to os.F_OK | os.X_OK. :param path defaults to the result
+    :param cmd: str
+    :param mode defaults to os.F_OK | os.X_OK.
+    :param path defaults to the result
     of os.environ.get("PATH"), or can be overridden with a custom search
     path.
 

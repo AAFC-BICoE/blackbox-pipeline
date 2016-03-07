@@ -3,7 +3,6 @@ __author__ = 'adamkoziol,mikeknowles'
 
 
 class MetadataReader(object):
-
     def reader(self):
         import os
         import json

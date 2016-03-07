@@ -8,9 +8,10 @@ __doc__ = 'Wrapper for bowtie2'
 
 class _PipeArgumentList(_Argument):
     """Represent a variable list of arguments for piping on a command line, e.g. sam to bam to sorted bam."""
+
     def __str__(self):
         assert isinstance(self.value, list), \
-                "Arguments should be a list"
+            "Arguments should be a list"
         assert self.value, "Requires at least one argument"
         # A leading pipe is required so that commands following the last filename
         # do not appear merged.
@@ -58,10 +59,10 @@ class _Bowtie2BaseCommandLine(AbstractCommandline):
                     raise ValueError("Options {} are incompatible".format(" and ".join(i)))
             elif type(incompatibles) is dict:
                 if self._get_parameter(element):
-                        for b in incompatibles[element]:
-                            if self._get_parameter(b):
-                                raise ValueError("Options %s and %s are incompatible."
-                                                 % (element, b))
+                    for b in incompatibles[element]:
+                        if self._get_parameter(b):
+                            raise ValueError("Options %s and %s are incompatible."
+                                             % (element, b))
             else:
                 for a in element:
                     if self._get_parameter(a):
@@ -131,7 +132,6 @@ class Bowtie2CommandLine(_Bowtie2BaseCommandLine):
             _Switch(["--qc-filter", "qc_filter"],
                     "Filter out reads for which the QSEQ filter field is non-zero. Only has an effect when read "
                     "format is --qseq. Default: off"),
-
 
             # Input Options
             _Switch(["-q", "fastq"],
@@ -742,9 +742,9 @@ class _Bowtie2SeqBaseCommandLine(_Bowtie2BaseCommandLine):
         _Bowtie2BaseCommandLine.__init__(self, cmd, **kwargs)
 
     def _validate(self):
-            incompatibles = []
-            self._validate_incompatibilities(incompatibles)
-            _Bowtie2BaseCommandLine._validate(self)
+        incompatibles = []
+        self._validate_incompatibilities(incompatibles)
+        _Bowtie2BaseCommandLine._validate(self)
 
 
 class Bowtie2BuildCommandLine(_Bowtie2SeqBaseCommandLine):
@@ -872,6 +872,7 @@ class Bowtie2InspectCommandLine(_Bowtie2SeqBaseCommandLine):
 
 if __name__ == '__main__':
     from Bio.Sequencing.Applications import SamtoolsViewCommandline, SamtoolsSortCommandline
+
     ubam = "/data/2015-SEQ-1283/qualimap_results/2015-SEQ-1283.sorted.bam"
     samsortt = SamtoolsSortCommandline(input_bam="-", out_prefix=ubam[:-4])
     samtoolss = [SamtoolsViewCommandline(b=True, S=True, input_file="-"), samsortt]

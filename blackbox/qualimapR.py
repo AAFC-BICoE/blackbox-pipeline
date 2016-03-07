@@ -162,6 +162,7 @@ if __name__ == '__main__':
     # from multiprocessing import cpu_count
     from time import time
     import json
+
     metadata = MetadataObject()
     metadata.path = "/data/"
     metadata.samples = [GenObject({'name': '2015-SEQ-1283'})]

@@ -92,6 +92,7 @@ class RunSpades(object):
         self.customsamplesheet = args.c
         self.basicassembly = args.basicAssembly
         self.clade = args.clade
+        self.hmm = args.hmm
         # self.pipelinefilepath = os.path.join(args.P, "")
         # Use the argument for the number of threads to use, or default to the number of cpus in the system
         self.cpus = args.t if args.t else multiprocessing.cpu_count()
@@ -121,7 +122,7 @@ class RunSpades(object):
         # Run Bowtie2, SAMtools, and Qualimap
         qualimapR.QualiMap(self)()
         # Run ITSx parallel
-        itsx.ITSx(self)
+        its.ITS(self)
         # Print the metadata to file
         metadataprinter.MetadataPrinter(self)
         #

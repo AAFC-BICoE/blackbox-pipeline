@@ -77,7 +77,7 @@ class Metadata(object):
                         run.SampleNumber = count - prev
                         # Create the 'General' category for strainmetadata
                         strainmetadata.general = GenObject({'outputdirectory': os.path.join(self.path, samplename),
-                                                            'pipelinecommit' : self.commit})
+                                                            'pipelinecommit': self.commit})
                         # Add the output directory to the general category
                         # Append the strainmetadata object to a list
                         self.samples.append(strainmetadata)
@@ -153,7 +153,7 @@ class Metadata(object):
                             # to ensure that the samples are the same
                             assert self.samples[strainindex].name == samplename, \
                                 "Sample name {} does not match object name {}" \
-                                .format(self.samples[strainindex].name, samplename)
+                                    .format(self.samples[strainindex].name, samplename)
                             # Extract and format the percent of reads (passing filter) associated with each sample
                             percentperstrain = float("{:.2f}".format(float(straindata[5])))
                             # Calculate the number of reads passing filter associated with each sample:

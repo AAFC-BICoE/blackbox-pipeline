@@ -7,7 +7,6 @@ __author__ = 'mikeknowles,akoziol'
 
 
 class Quast(object):
-
     def quastprocess(self):
         from threading import Thread
         # Find the fasta files for each sample
@@ -27,10 +26,10 @@ class Quast(object):
                 if os.path.isdir("{0:s}/referencegenome".format(self.path)):
                     from glob import glob
                     referencegenome = glob("{0:s}/referencegenome/*".format(self.path))
-                    sample.commands.Quast = "quast.py -R {0:s} --gage {1:s} -o {2:s}".\
+                    sample.commands.Quast = "quast.py -R {0:s} --gage {1:s} -o {2:s}". \
                         format(referencegenome[0], sample.general.bestassemblyfile, sample.general.quastresults)
                 else:
-                    sample.commands.Quast = "quast.py {0:s} -o {1:s}".\
+                    sample.commands.Quast = "quast.py {0:s} -o {1:s}". \
                         format(sample.general.bestassemblyfile, sample.general.quastresults)
                 self.qqueue.put(sample)
             else:
@@ -84,4 +83,3 @@ class Quast(object):
         self.qqueue = Queue()
         printtime('Running Quast {} for assembly metrics'.format(self.version.split(",")[0]), self.start)
         self.quastprocess()
-

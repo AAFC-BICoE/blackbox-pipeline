@@ -7,7 +7,6 @@ __author__ = 'mikeknowles,akoziol'
 
 
 class Busco(object):
-
     def buscoprocess(self):
         from threading import Thread
         os.chdir(self.path)
@@ -22,12 +21,12 @@ class Busco(object):
             threads.start()
         for sample in self.metadata:
             # Save augustus, blast and BUSCO versions
-            sample.software.BUSCO, sample.software.Blastn, sample.software.Augustus, sample.software.python3 =\
+            sample.software.BUSCO, sample.software.Blastn, sample.software.Augustus, sample.software.python3 = \
                 self.version, self.blast, self.augustus, self.pyversion
             if sample.general.bestassemblyfile:
                 sample.general.buscoresults = '{}/busco_results'.format(sample.general.outputdirectory)
                 buscotemp = "{}run_{}".format(self.path, sample.name)
-                sample.commands.BUSCO = "python3 {} -in {} -o {} -l /accessoryfiles/{} -m genome".\
+                sample.commands.BUSCO = "python3 {} -in {} -o {} -l /accessoryfiles/{} -m genome". \
                     format(self.executable, sample.general.bestassemblyfile, sample.name, self.lineage)
                 self.qqueue.put((sample, buscotemp))
             else:
@@ -93,5 +92,3 @@ class Busco(object):
         # Testing with bacterial HMMs
         self.lineage = inputobject.clade
         self.buscoprocess()
-
-

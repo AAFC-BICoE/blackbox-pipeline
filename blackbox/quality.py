@@ -10,7 +10,6 @@ __author__ = 'adamkoziol,mikeknowles'
 
 
 class Quality(object):
-
     def fastqcthreader(self, level):
         printtime('Running quality control on {} fastq files'.format(level), self.start)
         version = get_version(['fastqc', '-v']).rstrip()
@@ -106,11 +105,12 @@ class Quality(object):
                 if len(fastqfiles) == 2:
                     cleanreverse = '{}/{}_R2_trimmed.fastq'.format(outputdir, sample.name)
                     bbdukcall = "bbduk.sh -Xmx1g in1={} in2={} out1={} out2={} qtrim=w trimq=20 ktrim=r " \
-                        "k=25 mink=11 ref={}/resources/adapters.fa hdist=1 tpe tbo"\
+                                "k=25 mink=11 ref={}/resources/adapters.fa hdist=1 tpe tbo" \
                         .format(fastqfiles[0], fastqfiles[1], cleanforward, cleanreverse, self.bbduklocation)
                 elif len(fastqfiles) == 1:
                     bbdukcall = "bbduk.sh -Xmx1g in={} out={} qtrim=w trimq=20 ktrim=r k=25 mink=11 " \
-                        "ref={}/resources/adapters.fa hdist=1".format(fastqfiles[0], cleanforward, self.bbduklocation)
+                                "ref={}/resources/adapters.fa hdist=1".format(fastqfiles[0], cleanforward,
+                                                                              self.bbduklocation)
                 else:
                     bbdukcall = ""
                 # Record bbMap commands
