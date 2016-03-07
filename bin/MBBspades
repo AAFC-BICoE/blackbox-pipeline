@@ -176,7 +176,8 @@ if __name__ == '__main__':
                         'this sheet must still have the same format of Illumina SampleSheet.csv files')
     parser.add_argument('-b', '--basicAssembly', action='store_true', help='Performs a basic de novo assembly, '
                         'and does not collect metadata')
-    parser.add_argument('--clade', default='bacteria', help="Specifiy HMM database for BUSCO")
+    parser.add_argument('--clade', default='fungi', help="Specifiy HMM database for BUSCO")
+    parser.add_argument('--itsx', default='O,F', help="Specifiy comma-seperated HMM database for ITSx")
     # parser.add_argument('-P', metavar='pipelinefilepath', default='/spades_pipeline/SPAdesPipelineFiles', help='Path'
     #                     'to folder containing necessary files for sample typing. Default is '
     #                     '/spades_pipeline/SPAdesPipelineFiles')

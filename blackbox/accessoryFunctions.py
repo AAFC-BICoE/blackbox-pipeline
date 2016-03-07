@@ -229,7 +229,7 @@ class MetadataObject(object):
 
 
 def logstr(*args):
-    yield "{}\n".__add__("-".__mul__(60)).__mul__(len(args)).format(*args)
+    yield "{}\n".__add__("-".__mul__(60).__add__("\n")).__mul__(len(args)).format(*args)
 
 
 def which(cmd, mode=os.F_OK | os.X_OK, path=None):

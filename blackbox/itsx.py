@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from Bio import SeqIO
 from threading import Thread
-from collections import defaultdict
 from accessoryFunctions import *
 import os
 import shutil
@@ -112,7 +111,7 @@ class ITSx(object):
             for ele in lst[2:]:
                 if "No" not in ele and ': ' in ele:
                     k, v = ele.split(": ")
-                    main((sample.ITS, k), "{}[{}]".format(contig, v))
+                    main((sample.ITS, k), "{}[{}]".format(contig, v.replace('-', ':')))
 
     def run(self):
         import math

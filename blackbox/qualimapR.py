@@ -75,7 +75,7 @@ class QualiMap(object):
                 for func in sample.commands.Bowtie2Build, sample.commands.Bowtie2Align:
                     stdout.close()
                     # Use cStringIO streams to handle bowtie output
-                    stdout, stderr = map(StringIO, func())
+                    stdout, stderr = map(StringIO, func(cwd=sample.general.QualimapResults))
                     if stderr:
                         # Write the standard error to log, bowtie2 puts alignmentsummary here
                         with open(os.path.join(sample.general.QualimapResults, "bowtie_samtools.log"), "ab+") as log:
