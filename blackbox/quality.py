@@ -3,8 +3,7 @@ import os
 from threading import Thread
 from Queue import Queue
 import time
-from subprocess import call, Popen, PIPE
-from accessoryFunctions import printtime, get_version
+from accessoryFunctions import *
 
 __author__ = 'adamkoziol,mikeknowles'
 
@@ -68,7 +67,7 @@ class Quality(object):
                 # Make the output directory
                 make_path(outputdir)
                 # Run the system call
-                call(systemcall, shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+                execute(systemcall)
                 # call(systemcall, shell=True, stdout=devnull, stderr=devnull)
             # Signal to qcqueue that job is done
             self.qcqueue.task_done()
@@ -98,19 +97,17 @@ class Quality(object):
                 # Define the output directory
                 outputdir = sample.general.outputdirectory
                 # Define the name of the forward trimmed fastq file
-                cleanforward = '{}/{}_R1_trimmed.fastq'.format(outputdir, sample.name)
+                fastqfiles.append('{}/{}_R1_trimmed.fastq'.format(outputdir, sample.name))
                 # Separate system calls for paired and unpaired fastq files
                 # TODO minlen=number - incorporate read length
+                bbdukcall = "bbduk.sh -Xmx1g qtrim=w trimq=20 ktrim=l minlength=50" \
+                            " k=25 mink=11 ref={}/resources/adapters.fa hdist=1".format(self.bbduklocation)
                 # http://seqanswers.com/forums/showthread.php?t=42776
                 if len(fastqfiles) == 2:
-                    cleanreverse = '{}/{}_R2_trimmed.fastq'.format(outputdir, sample.name)
-                    bbdukcall = "bbduk.sh -Xmx1g in1={} in2={} out1={} out2={} qtrim=w trimq=20 ktrim=r " \
-                                "k=25 mink=11 ref={}/resources/adapters.fa hdist=1 tpe tbo" \
-                        .format(fastqfiles[0], fastqfiles[1], cleanforward, cleanreverse, self.bbduklocation)
+                    fastqfiles.append('{}/{}_R2_trimmed.fastq'.format(outputdir, sample.name))
+                    bbdukcall += "in1={} in2={} out1={} out2={} tpe tbo".format(*fastqfiles)
                 elif len(fastqfiles) == 1:
-                    bbdukcall = "bbduk.sh -Xmx1g in={} out={} qtrim=w trimq=20 ktrim=r k=25 mink=11 " \
-                                "ref={}/resources/adapters.fa hdist=1".format(fastqfiles[0], cleanforward,
-                                                                              self.bbduklocation)
+                    bbdukcall += "bbduk.sh in={} out={}".format(*fastqfiles)
                 else:
                     bbdukcall = ""
                 # Record bbMap commands
@@ -118,7 +115,7 @@ class Quality(object):
                 # Record FastQC version
                 sample.software.bbduk = version
                 # Add the arguments to the queue
-                self.trimqueue.put((bbdukcall, cleanforward))
+                self.trimqueue.put((bbdukcall, fastqfiles[2]))
         # Wait on the trimqueue until everything has been processed
         self.trimqueue.join()
         # Add all the trimmed files to the metadata
@@ -139,17 +136,15 @@ class Quality(object):
             (systemcall, forwardname) = self.trimqueue.get()
             # Check to see if the forward file already exists
             if not os.path.isfile(forwardname):
-                call(systemcall, shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+                execute(systemcall)
             # Signal to trimqueue that job is done
             self.trimqueue.task_done()
 
     def __init__(self, inputobject):
-        from subprocess import Popen, PIPE
         self.metadata = inputobject.runmetadata.samples
         self.qcqueue = Queue()
         self.trimqueue = Queue()
         self.correctqueue = Queue()
         self.start = inputobject.starttime
         # Find the location of the bbduk.sh script. This will be used in finding the adapter file
-        self.bbduklocation = os.path.split(Popen('which bbduk.sh', shell=True, stdout=PIPE)
-                                           .communicate()[0].rstrip())[0]
+        self.bbduklocation = os.path.dirname(which('bbduk.sh'))
