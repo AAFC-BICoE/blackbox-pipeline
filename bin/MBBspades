@@ -46,8 +46,9 @@ class RunSpades(object):
         qualityobject = quality.Quality(self)
         # Run FastQC on the unprocessed fastq files
         qualityobject.fastqcthreader('Raw')
-        # Perform quality trimming and FastQC on the trimmed files
-        qualityobject.trimquality()
+        if self.trim:
+            # Perform quality trimming and FastQC on the trimmed files
+            qualityobject.trimquality()
         # Print the metadata to file
         metadataprinter.MetadataPrinter(self)
 
@@ -93,6 +94,7 @@ class RunSpades(object):
         self.basicassembly = args.basicAssembly
         self.clade = args.clade
         self.hmm = args.hmm
+        self.trim = args.trimoff
         # self.pipelinefilepath = os.path.join(args.P, "")
         # Use the argument for the number of threads to use, or default to the number of cpus in the system
         self.cpus = args.t if args.t else multiprocessing.cpu_count()
@@ -179,6 +181,7 @@ if __name__ == '__main__':
                         'and does not collect metadata')
     parser.add_argument('--clade', default='fungi', help="Specifiy HMM database for BUSCO")
     parser.add_argument('--itsx', default='O,F', help="Specifiy comma-seperated HMM database for ITSx")
+    parser.add_argument('--trimoff', action='store_false', help='Turn off trimming with bbduk')
     # parser.add_argument('-P', metavar='pipelinefilepath', default='/spades_pipeline/SPAdesPipelineFiles', help='Path'
     #                     'to folder containing necessary files for sample typing. Default is '
     #                     '/spades_pipeline/SPAdesPipelineFiles')
