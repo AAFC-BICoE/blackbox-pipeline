@@ -1,7 +1,12 @@
 [Parallel ITSx]:https://github.com/AAFC-MBB/parallel_itsx 
 
+
 SPAdesPipeline
 ==============
+#### Table of Contents
+
+[TOC level=3] 
+## Background
 ### Introduction
 
 This pipeline is designed to be able to assemble and type raw fastq data generated using an Illumina MiSeq.
@@ -43,7 +48,7 @@ including:
   of bowtie2 wrapper using corrected reads from SPAdes 
 * [ITSx Parser](blackbox/its.py): Utilizes [Parallel ITSx] and parses result 
 
-# Installation
+## Installation
 ### Untested non-Docker installation
 After cloning the git: 
 
@@ -75,7 +80,7 @@ python setup.py install
   script](https://github.com/AFFC-MBB/docker-assembly/blob/master/accessoryfiles.sh) added to the `$PATH` environment 
 * Requirements in [Dockerfile](https://github.com/AFFC-MBB/docker-assembly/blob/master/Dockerfile) in `apt-get`
 
-# Outputs
+## Outputs
 This pipeline generates multiple outputs.
 
 1. Assembled contigs - these are collected in the 'BestAssemblies' folder
@@ -84,7 +89,7 @@ This pipeline generates multiple outputs.
 Additionally, within the individual strain subfolders, a .pdf output of plotted insert sizes is included in the 'insertSizes' folder.
 Detailed reports can be found in the 'quast_results' folder, and the reference genome file is located in 'referenceGenome'
 
-# Usage
+## Usage
 
 ```commandline
 usage: MBBSpades [-h] [-v] [-n numreads] [-t threads] [-o] [-F]
