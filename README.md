@@ -3,9 +3,24 @@
 
 SPAdesPipeline
 ==============
-#### Table of Contents
+##### Table of Contents
 
-[TOC level=3] 
+<ul>
+<li><a href="#background">Background</a>
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#contents">Contents</a></li>
+</ul></li>
+<li><a href="#installation">Installation</a><ul>
+<li><a href="#untestednon-dockerinstallation">Untested non-Docker installation</a></li>
+<li><a href="#requirements">Requirements</a><ul>
+<li><a href="#docker">Docker</a></li>
+<li><a href="#non-dockerinstallation">non-Docker installation</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#outputs">Outputs</a></li>
+<li><a href="#usage">Usage</a></li></ul>
+
 ## Background
 ### Introduction
 
@@ -28,7 +43,7 @@ Copy all necessary files to a properly named folder in an easy to remember locat
 
 ### Contents 
 
-[MBBSpades]: bin/MBBSpades
+[MBBspades]: bin/MBBspades
 [SPAdes]: http://spades.bioinf.spbau.ru 
 
 This pipeline includes a main script ([MBBSpades]), and which relies on helper modules located in helper scripts, 
@@ -72,7 +87,7 @@ python setup.py install
 * This is the ideal solution see the [parent project](https://github.com/AAFC-MBB/docker-assembly) 
 * Everything else should be contained within the docker container, and is ready to run. 
 
-#### Untested non-Docker installation
+#### non-Docker installation
 
 * [Parallel ITSx]
 * Quast and SPAdes apart of the `$PYTHONPATH`
@@ -91,7 +106,7 @@ Detailed reports can be found in the 'quast_results' folder, and the reference g
 
 ## Usage
 
-```commandline
+```
 usage: MBBSpades [-h] [-v] [-n numreads] [-t threads] [-o] [-F]
                                    [-d destinationfastq] [-m miSeqPath] [-f miseqfolder]
                                    [-r1 readLengthForward] [-r2 readLengthReverse]
