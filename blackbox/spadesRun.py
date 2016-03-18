@@ -46,7 +46,7 @@ class Spades(object):
                 forward = fastqfiles[0]
                 # Set the output directory
                 sample.general.spadesoutput = '{}/spades_output'.format(sample.general.outputdirectory)
-                spadescommand = '-k {} --careful -o {} -t {}'.format(sample.general.kmers, sample.general.spadesoutput,
+                spadescommand = '-k {} --careful -o {} -t {} '.format(sample.general.kmers, sample.general.spadesoutput,
                                                                      self.threads)
                 # If a previous assembly was partially completed, continue from the most recent checkpoint
                 if os.path.isdir(sample.general.spadesoutput):
@@ -171,15 +171,16 @@ class Spades(object):
         import yaml
         for sample in self.metadata:
             yamlfile = os.path.join(sample.general.spadesoutput, 'corrected', 'corrected.yaml')
-            with open(yamlfile) as spades:
-                for seq in yaml.load(spades):
-                    for group in seq:
-                        main = lambda x: getattr(sample.general, x).extend(seq[group]) \
-                            if hasattr(sample.general, x) else setattr(sample.general, x, seq[group])
-                        if group.startswith('interlaced'):
-                            main('CorrectedSingleReads')
-                        elif group.endswith('reads'):
-                            main('Corrected' + group.title().replace(" ", ""))
+            if os.path.isfile(yamlfile):
+                with open(yamlfile) as spades:
+                    for seq in yaml.load(spades):
+                        for group in seq:
+                            main = lambda x: getattr(sample.general, x).extend(seq[group]) \
+                                if hasattr(sample.general, x) else setattr(sample.general, x, seq[group])
+                            if group.startswith('interlaced'):
+                                main('CorrectedSingleReads')
+                            elif group.endswith('reads'):
+                                main('Corrected' + group.title().replace(" ", ""))
 
     def __init__(self, inputobject):
         from Queue import Queue

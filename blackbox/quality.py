@@ -101,13 +101,13 @@ class Quality(object):
                 # Separate system calls for paired and unpaired fastq files
                 # TODO minlen=number - incorporate read length
                 bbdukcall = "bbduk.sh -Xmx1g qtrim=w trimq=20 ktrim=l minlength=50" \
-                            " k=25 mink=11 ref={}/resources/adapters.fa hdist=1".format(self.bbduklocation)
+                            " k=25 mink=11 ref={}/resources/adapters.fa hdist=1 ".format(self.bbduklocation)
                 # http://seqanswers.com/forums/showthread.php?t=42776
-                if len(fastqfiles) == 2:
+                if len(sample.general.fastqfiles) == 2:
                     fastqfiles.append('{}/{}_R2_trimmed.fastq'.format(outputdir, sample.name))
                     bbdukcall += "in1={} in2={} out1={} out2={} tpe tbo".format(*fastqfiles)
-                elif len(fastqfiles) == 1:
-                    bbdukcall += "bbduk.sh in={} out={}".format(*fastqfiles)
+                elif len(sample.general.fastqfiles) == 1:
+                    bbdukcall += "in={} out={}".format(*fastqfiles)
                 else:
                     bbdukcall = ""
                 # Record bbMap commands
@@ -135,7 +135,7 @@ class Quality(object):
             # Unpack the variables from the queue
             (systemcall, forwardname) = self.trimqueue.get()
             # Check to see if the forward file already exists
-            if not os.path.isfile(forwardname):
+            if not os.path.isfile(forwardname) and systemcall:
                 execute(systemcall)
             # Signal to trimqueue that job is done
             self.trimqueue.task_done()

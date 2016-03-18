@@ -26,7 +26,7 @@ class RunSpades(object):
             self.runmetadata.parseruninfo()
             # Populate the lack of bclcall and nohup call into the metadata sheet
             for sample in self.runmetadata.samples:
-                setattr(sample, "commands", accessoryFunctions.GenObject({'nohupcall': 'NA', 'bclcall': 'NA'}))
+                setattr(sample, "commands", accessoryFunctions.GenObject({'nohupcall': 'NA', 'bclcall': 'NA', 'pipeline' : self.parameters}))
                 # sample.commands = accessoryFunctions.GenObject()
                 # sample.commands.nohupcall = 'NA'
                 # sample.commands.bclcall = 'NA'
@@ -79,6 +79,7 @@ class RunSpades(object):
         Initialises the variables required for this class
         """
         # Define variables from the arguments - there may be a more streamlined way to do this
+        import sys
         self.args = args
         self.path = os.path.join(args.path, "")
         self.numreads = args.n
@@ -93,8 +94,9 @@ class RunSpades(object):
         self.customsamplesheet = args.c
         self.basicassembly = args.basicAssembly
         self.clade = args.clade
-        self.hmm = args.hmm
+        self.hmm = args.itsx
         self.trim = args.trimoff
+        self.parameters = sys.argv
         # self.pipelinefilepath = os.path.join(args.P, "")
         # Use the argument for the number of threads to use, or default to the number of cpus in the system
         self.cpus = args.t if args.t else multiprocessing.cpu_count()
@@ -188,7 +190,7 @@ if __name__ == '__main__':
 
     # Get the arguments into a list
     arguments = parser.parse_args()
-
+    print arguments
     starttime = time()
     # Run the pipeline
     RunSpades(arguments, commit, starttime, homepath)
