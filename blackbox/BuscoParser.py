@@ -43,7 +43,7 @@ class Busco(object):
             if sample.general.bestassemblyfile != 'NA' and map(os.path.isfile, [tempfile, moved]) == [False] * 2:
                 if os.path.isdir(temp):  # force incomplete BUSCO runs
                     sample.commands.BUSCO += " -f"
-                execute(sample.commands.BUSCO)
+                execute(sample.commands.BUSCO, cwd=sample.general.buscoresults)
             if os.path.isfile(tempfile):
                 shutil.move(temp, sample.general.buscoresults)
             if os.path.isfile(moved):

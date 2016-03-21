@@ -42,7 +42,10 @@ def printtime(string, start):
     :param start: integer of the starting time
     """
     import time
-    print('\n\033[1m' + "[Elapsed Time: {:.2f} seconds] {}".format(time.time() - start, string) + '\033[0m')
+    m, s = divmod(time.time() - start, 60)
+    h, m = divmod(m, 60)
+    strtime = "{0:0.0f}hr {1:0.0f}m {2:0.03f}s".format(h, m, s) if h else "{1:0.0f}m {2:0.03f}s".format(m, s)
+    print('\n\033[1m' + "[Elapsed Time: {}] {}".format(strtime, string) + '\033[0m')
 
 
 # Initialise globalcount

@@ -100,7 +100,7 @@ class Quality(object):
                 fastqfiles.append('{}/{}_R1_trimmed.fastq'.format(outputdir, sample.name))
                 # Separate system calls for paired and unpaired fastq files
                 # TODO minlen=number - incorporate read length
-                bbdukcall = "bbduk.sh -Xmx1g qtrim=w trimq=20 ktrim=l minlength=50" \
+                bbdukcall = "bbduk.sh -Xmx1g qtrim=w trimq=25 ktrim=r minlength=50 ftl=10" \
                             " k=25 mink=11 ref={}/resources/adapters.fa hdist=1 ".format(self.bbduklocation)
                 # http://seqanswers.com/forums/showthread.php?t=42776
                 if len(sample.general.fastqfiles) == 2:
