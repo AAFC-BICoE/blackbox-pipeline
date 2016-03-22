@@ -61,7 +61,6 @@ class ITS(object):
                                         N=2, t=self.hmm,
                                         detailed_results="T",
                                         preserve="T")
-            print repr(sample.commands.ITSx)
             if not all(map(os.path.isfile, [positions, summary])):
                 sample.commands.ITSx(name=sample.name, total=int(sample.assembly.TotalLength))
             if all(map(os.path.isfile, [positions, summary])):
