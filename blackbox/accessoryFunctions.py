@@ -44,7 +44,7 @@ def printtime(string, start):
     import time
     m, s = divmod(time.time() - start, 60)
     h, m = divmod(m, 60)
-    strtime = "{0:0.0f}hr {1:0.0f}m {2:0.03f}s".format(h, m, s) if h else "{1:0.0f}m {2:0.03f}s".format(m, s)
+    strtime = "{0:0.0f}hr {1:0.0f}m {2:0.03f}s".format(h, m, s) if h else "{0:0.0f}m {1:0.03f}s".format(m, s)
     print('\n\033[1m' + "[Elapsed Time: {}] {}".format(strtime, string) + '\033[0m')
 
 
