@@ -93,7 +93,7 @@ python setup.py install
 * Quast and SPAdes apart of the `$PYTHONPATH`
 * All tools contained in [accessoryfiles 
   script](https://github.com/AFFC-MBB/docker-assembly/blob/master/accessoryfiles.sh) added to the `$PATH` environment 
-* Requirements in [Dockerfile](https://github.com/AFFC-MBB/docker-assembly/blob/master/Dockerfile) in `apt-get`
+* Requirements in [Dockerfile](https://github.com/AAFC-MBB/docker-assembly/blob/master/Dockerfile) in `apt-get` 
 
 ## Outputs
 This pipeline generates multiple outputs.

@@ -38,10 +38,8 @@ class Spades(object):
             else:
                 fastqfiles = ''
             # Only proceed if fastq files exists
-            if "yaml" in dict(sample.run):
-                # TODO: implement complex yaml input for spades
-                pass
-            elif fastqfiles:
+
+            if fastqfiles:
                 # Set the the forward fastq files
                 forward = fastqfiles[0]
                 # Set the output directory
@@ -52,16 +50,24 @@ class Spades(object):
                 if os.path.isdir(sample.general.spadesoutput):
                     spadescommand += ' --continue'
                 # If there are two fastq files
-                if len(fastqfiles) == 2:
-                    if 'Mate Pair' in sample.run.Assay:
-                        spadescommand += '--mp1-1 {} --mp2-2 {}'.format(forward, fastqfiles[1])
+                if self.yaml:
+                    # TODO: implement complex yaml input for spades
+                    yaml = os.path.join(self.path, sample.name + '.yml')
+
+                    if os.path.isfile(yaml):
+                        spadescommand += '--dataset {} '.format(yaml)
+                        sample.general.dataset = yaml
+                if "dataset" not in dict(sample.general):
+                    if len(fastqfiles) == 2:
+                        if 'Mate Pair' in sample.run.Assay:
+                            spadescommand += '--mp1-1 {} --mp2-2 {} '.format(forward, fastqfiles[1])
+                        else:
+                            spadescommand += '--pe1-1 {} --pe1-2 {} '.format(forward, fastqfiles[1])
                     else:
-                        spadescommand += '--pe1-1 {} --pe1-2 {}'.format(forward, fastqfiles[1])
-                else:
-                    if 'Mate Pair' in sample.run.Assay:
-                        spadescommand += '--mp1-12 {} --mp2-2 {}'.format(forward, fastqfiles[1])
-                    else:
-                        spadescommand += '--s1 {}'.format(forward)
+                        if 'Mate Pair' in sample.run.Assay:
+                            spadescommand += '--mp1-12 {} --mp2-2 {} '.format(forward, fastqfiles[1])
+                        else:
+                            spadescommand += '--s1 {} '.format(forward)
                 # SPAdes 3.6.2 supports python 3.5
                 if self.version >= "3.6.2":
                     spadescommand = "python3 {} {}".format(spadespath, spadescommand)
@@ -194,5 +200,5 @@ class Spades(object):
         import spades_init
         spades_init.init()
         self.version = spades_init.spades_version.rstrip()
-        self.yaml = None
+        self.yaml = inputobject.dataset
         self.spades()
