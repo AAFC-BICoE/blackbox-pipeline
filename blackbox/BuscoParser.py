@@ -25,6 +25,7 @@ class Busco(object):
                 self.version, self.blast, self.augustus, self.pyversion
             if sample.general.bestassemblyfile:
                 sample.general.buscoresults = '{}/busco_results'.format(sample.general.outputdirectory)
+                make_path(sample.general.buscoresults)
                 buscotemp = "{}run_{}".format(self.path, sample.name)
                 sample.commands.BUSCO = "python3 {} -in {} -o {} -l /accessoryfiles/{} -m genome". \
                     format(self.executable, sample.general.bestassemblyfile, sample.name, self.lineage)

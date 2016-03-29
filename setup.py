@@ -12,11 +12,12 @@ class RecordGit(install):
 
     def run(self):
         import sys
-        print 'recording git commit'
-        from blackbox.accessoryFunctions import make_path
-        make_path(os.path.join(os.path.split(__file__)[0], 'blackbox', 'data'))
-        with open(os.path.join(os.path.split(__file__)[0], 'blackbox', 'data', 'git.dat'), 'w') as git:
-            git.write(os.popen('git rev-parse --short HEAD').read().rstrip())
+        if not os.path.isfile(os.path.join(os.path.split(__file__)[0], 'blackbox', 'data')):
+            print 'recording git commit'
+            from blackbox.accessoryFunctions import make_path
+            make_path(os.path.join(os.path.split(__file__)[0], 'blackbox', 'data'))
+            with open(os.path.join(os.path.split(__file__)[0], 'blackbox', 'data', 'git.dat'), 'w') as git:
+                git.write(os.popen('git rev-parse --short HEAD').read().rstrip())
         # Attempt to detect whether we were called from setup() or by another
         # command.  If we were called by setup(), our caller will be the
         # 'run_command' method in 'distutils.dist', and *its* caller will be

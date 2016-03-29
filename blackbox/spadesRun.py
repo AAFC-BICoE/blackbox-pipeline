@@ -48,7 +48,7 @@ class Spades(object):
                                                                      self.threads)
                 # If a previous assembly was partially completed, continue from the most recent checkpoint
                 if os.path.isdir(sample.general.spadesoutput):
-                    spadescommand += ' --continue'
+                    spadescommand += ' --continue '
                 # If there are two fastq files
                 if self.yaml:
                     # TODO: implement complex yaml input for spades
@@ -70,9 +70,9 @@ class Spades(object):
                             spadescommand += '--s1 {} '.format(forward)
                 # SPAdes 3.6.2 supports python 3.5
                 if self.version >= "3.6.2":
-                    spadescommand = "python3 {} {}".format(spadespath, spadescommand)
+                    spadescommand = "python3 {} {}".format(spadespath, spadescommand.rstrip())
                 else:
-                    spadescommand = "spades.py " + spadescommand
+                    spadescommand = "spades.py " + spadescommand.strip()
             # If there are no fastq files, populate the metadata appropriately
             else:
                 sample.general.spadesoutput = 'NA'
