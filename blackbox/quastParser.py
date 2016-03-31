@@ -11,7 +11,7 @@ class Quast(object):
         from threading import Thread
         # Find the fasta files for each sample
         # Only make as many threads are there are samples with fasta files
-        for i in range(len([sample.general for sample in self.metadata if sample.general.bestassemblyfile])):
+        for i in range(len([sample.general for sample in self.metadata if sample.general.bestassemblyfile != "NA"])):
             # Send the threads to the merge method. :args is empty as I'm using
             threads = Thread(target=self.analyze, args=())
             # Set the daemon to true - something to do with thread management
@@ -21,7 +21,7 @@ class Quast(object):
         for sample in self.metadata:
             # Initialise the quast command and version
             sample.software.Quast = self.version
-            if sample.general.bestassemblyfile:
+            if sample.general.bestassemblyfile != "NA":
                 sample.general.quastresults = '{}/quast_results'.format(sample.general.outputdirectory)
                 if os.path.isdir("{0:s}/referencegenome".format(self.path)):
                     from glob import glob

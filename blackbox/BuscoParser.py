@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from accessoryFunctions import *
+from glob import iglob
 import os
 import shutil
 
@@ -12,7 +13,7 @@ class Busco(object):
         os.chdir(self.path)
         # Find the fasta files for each sample
         # Only make as many threads are there are samples with fasta files
-        for i in range(len([sample.general for sample in self.metadata if sample.general.bestassemblyfile])):
+        for i in range(len([sample.general for sample in self.metadata if sample.general.bestassemblyfile != "NA"])):
             # Send the threads to the merge method. :args is empty as I'm using
             threads = Thread(target=self.analyze, args=())
             # Set the daemon to true - something to do with thread management
@@ -23,10 +24,9 @@ class Busco(object):
             # Save augustus, blast and BUSCO versions
             sample.software.BUSCO, sample.software.Blastn, sample.software.Augustus, sample.software.python3 = \
                 self.version, self.blast, self.augustus, self.pyversion
-            if sample.general.bestassemblyfile:
+            if sample.general.bestassemblyfile != "NA":
                 sample.general.buscoresults = '{}/busco_results'.format(sample.general.outputdirectory)
-                make_path(sample.general.buscoresults)
-                buscotemp = "{}run_{}".format(self.path, sample.name)
+                buscotemp = os.path.join(sample.general.buscoresults, "run_{}".format(sample.name))
                 sample.commands.BUSCO = "python3 {} -in {} -o {} -l /accessoryfiles/{} -m genome". \
                     format(self.executable, sample.general.bestassemblyfile, sample.name, self.lineage)
                 self.qqueue.put((sample, buscotemp))
@@ -44,9 +44,13 @@ class Busco(object):
             if sample.general.bestassemblyfile != 'NA' and map(os.path.isfile, [tempfile, moved]) == [False] * 2:
                 if os.path.isdir(temp):  # force incomplete BUSCO runs
                     sample.commands.BUSCO += " -f"
+                else:
+                    make_path(sample.general.buscoresults)
                 execute(sample.commands.BUSCO, cwd=sample.general.buscoresults)
             if os.path.isfile(tempfile):
-                shutil.move(temp, sample.general.buscoresults)
+                for tempfolder in iglob(os.path.join(temp, '*')):
+                    shutil.move(tempfolder, sample.general.buscoresults)
+                os.rmdir(temp)
             if os.path.isfile(moved):
                 self.metaparse(sample, moved)
             # Signal to the queue that the job is done

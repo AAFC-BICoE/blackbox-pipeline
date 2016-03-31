@@ -126,7 +126,7 @@ class RunSpades(object):
         # Run quast
         quastParser.Quast(self)
         # RUN BUSCO
-        BuscoParser.Busco(self)
+        # BuscoParser.Busco(self)
         # Run Bowtie2, SAMtools, and Qualimap
         qualimapR.QualiMap(self)()
         # Run ITSx parallel
