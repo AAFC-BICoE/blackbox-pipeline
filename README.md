@@ -1,108 +1,56 @@
 [Parallel ITSx]:https://github.com/AAFC-MBB/parallel_itsx 
 
 
-SPAdesPipeline
+Blackbox Pipeline for genome assembly
 ==============
-##### Table of Contents
-
-<ul>
-<li><a href="#background">Background</a>
-<ul>
-<li><a href="#introduction">Introduction</a></li>
-<li><a href="#contents">Contents</a></li>
-</ul></li>
-<li><a href="#installation">Installation</a><ul>
-<li><a href="#untestednon-dockerinstallation">Untested non-Docker installation</a></li>
-<li><a href="#requirements">Requirements</a><ul>
-<li><a href="#docker">Docker</a></li>
-<li><a href="#non-dockerinstallation">non-Docker installation</a></li>
-</ul></li>
-</ul></li>
-<li><a href="#outputs">Outputs</a></li>
-<li><a href="#usage">Usage</a></li></ul>
 
 ## Background
 ### Introduction
 
-This pipeline is designed to be able to assemble and type raw fastq data generated using an Illumina MiSeq.
+This is an automated genome assembly pipeline designed to optimally run inside a Docker image.  The purpose of this pipeline is to provide researchers with a standard and simplified workflow for microbial genome assembly while keeping track of executed commands and their parameters, program version numbers and associated sample metadata, which is important for ensuring experimental reproducibility and traceability.
 
-It has been designed to run using either the archived files obtained from BaseSpace (something similar to analysis_14348334_fastq.zip),
-alternatively, it is possible to use the individual fastq files taken directly from the MiSeq. This is probably better, as,
-in addition to the fastq files, three other files from the MiSeq are required for the pipeline to function:
+This pipeline uses SPAdes as the genome assembler and therefore would work best with bacterial or smaller fungal genomes (< 100 Mb).  MiSeq raw reads and metadata files are required as input.  Alternatively, archived files from BaseSpace (e.g. analysis_14348334_fastq.zip) can also be used as input.  In addition to the forward and reverse reads file, the following files are required:
 
 1. GenerateFASTQRunStatistics.xml
 2. RunInfo.xml
 3. SampleSheet.csv
 
-These files are located within the appropriate subfolder (e.g. 140922_M02466_0030_000000000-AARWU - this folder consists
-of the date (140922), the MiSeq designation (M02466), and the flowcell number (000000000-AARWU)) of the MiSeqOutput
+These files are located within the appropriate subfolder (e.g. 140922_M02466_0030_000000000-AARWU - the naming of this folder consists of the date (140922), the MiSeq designation (M02466), and the flowcell number (000000000-AARWU)) of the MiSeqOutput
 directory in the MiSeq onboard computer. The fastq files are located in the ../MiSeqOutput/140922_M02466_0030_000000000-AARWU/Data/Intensities/BaseCalls
 folder.
 
-Copy all necessary files to a properly named folder in an easy to remember location (e.g. ../Sequencing/140922).
+Copy the forward and reverse fastq files, GenerateFASTQRunStatistics.xml, RunInfo.xml and SampleSheet.csv to a different working location (e.g. ../Sequencing/user_name/project_name/genome_assembly/140922).
 
 ### Contents 
 
 [MBBspades]: bin/MBBspades
 [SPAdes]: http://spades.bioinf.spbau.ru 
 
-This pipeline includes a main script ([MBBSpades]), and which relies on helper modules located in helper scripts, 
-including: 
+This pipeline includes a main script ([MBBSpades]) that executes the following helper modules:
 
-* [Metadata Reader](blackbox/runMetadata.py): Pulling metadata from sequencing run reports/files 
-* [Fastq Mover](blackbox/fastqmover.py): Moving and/or extracting archived files 
-* [SPAdes Run](blackbox/spadesRun.py) Running SPAdes assembler with error correction enabled by default 
-    * Estimating the size of the library fragments
-* [Quast Parser](blackbox/quastParser.py): Determining assembly quality metrics using quast 
+* [Metadata Reader](blackbox/runMetadata.py): Extracts metadata from sequencing run reports/files 
+* [Fastq Mover](blackbox/fastqmover.py): Moves and/or extracts archived files 
+* [SPAdes Run](blackbox/spadesRun.py): Runs SPAdes assembler with error correction enabled by default as well as estimates the insert size of input libraries.
+* [QUAST Parser](blackbox/quastParser.py): Determines assembly quality metrics using QUAST 
 * [Bowtie2 Wrapper](blackbox/bowtie.py): Subclass of [Biopython's 
   AbstractCommandline](http://biopython.org/DIST/docs/api/Bio.Application.AbstractCommandline-class.html) for 
   [Bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml) with support for piping to SAMtools for sorted bam output 
-* [Busco Parser](blackbox/BuscoParser.py): Wrapper and parser of [BUSCO](http://busco.ezlab.org) 
-* [Metadata Writer](blackbox/metadataprinter.py): Creating a JSON report of all collected metadata for each sequenced strain 
-* [QualiMap Parser](blackbox/qualimapR.py): Wrapper and parser for [qualimap](http://qualimap.bioinfo.cipf.es/) with use 
-  of bowtie2 wrapper using corrected reads from SPAdes 
-* [ITSx Parser](blackbox/its.py): Utilizes [Parallel ITSx] and parses result 
+* [Metadata Writer](blackbox/metadataprinter.py): Creates a JSON report of all metadata for each sequenced strain 
+* [QualiMap Parser](blackbox/qualimapR.py): Wrapper and parser for [qualimap](http://qualimap.bioinfo.cipf.es/) using the bowtie2 wrapper that maps the corrected reads from SPAdes 
+* [ITSx Parser](blackbox/its.py): Utilizes [Parallel ITSx] and parses the results. This will not run if `--clade` is set to `bacteria`
 
 ## Installation
-### Untested non-Docker installation
-After cloning the git: 
-
-```commandline
-git clone https://github.com/AAFC-MBB/blackbox-pipeline
-```
-
-Install the python package:
-
-```commandline
-cd blackbox-pipeline
-python setup.py install
-```
-
-[MBBSpades] will now be in your `$PATH`
 
 ### Requirements 
 
 #### Docker 
 
-* This is the ideal solution see the [parent project](https://github.com/AAFC-MBB/docker-assembly) 
-* Everything else should be contained within the docker container, and is ready to run. 
-
-#### non-Docker installation
-
-* [Parallel ITSx]
-* Quast and SPAdes apart of the `$PYTHONPATH`
-* All tools contained in [accessoryfiles 
-  script](https://github.com/AFFC-MBB/docker-assembly/blob/master/accessoryfiles.sh) added to the `$PATH` environment 
-* Requirements in [Dockerfile](https://github.com/AAFC-MBB/docker-assembly/blob/master/Dockerfile) in `apt-get` 
+* This is the ideal solution.  See the [parent project](https://github.com/AAFC-MBB/docker-assembly) for details on how to install and set up.
 
 ## Outputs
-This pipeline generates multiple outputs.
 
-1. Assembled contigs - these are collected in the 'BestAssemblies' folder
-2. JSON reports - these are located in the genome folder with the suffix _\_metadata.json_ 
-
-Additionally, within the individual strain subfolders, a .pdf output of plotted insert sizes is included in the 'insertSizes' folder.
-Detailed reports can be found in the 'quast_results' folder, and the reference genome file is located in 'referenceGenome'
+1. Assembled contigs are collected in the 'BestAssemblies' folder
+2. Reports in JSON format are located in the genome folder with the suffix _\_metadata.json_
 
 ## Usage
 
